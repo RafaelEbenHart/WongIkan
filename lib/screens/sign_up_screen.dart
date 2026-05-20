@@ -1,6 +1,7 @@
 import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
 import 'package:firebase_auth/firebase_auth.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:wongiwak/screens/home_screen.dart';
 import 'package:wongiwak/screens/sign_in_screen.dart';
 
@@ -11,12 +12,15 @@ class SignUpScreen extends StatefulWidget {
   SignUpScreenState createState() => SignUpScreenState();
 }
 
-class SignUpScreenState extends State<SignUpScreen> {
-  final _nameController = TextEditingController();
+class _SignUpScreenState extends State<SignUpScreen> {
+  final _usernameController = TextEditingController();
+  final _alamatController = TextEditingController();
   final _emailController = TextEditingController();
   final _passwordController = TextEditingController();
   final _confirmPasswordController = TextEditingController();
+
   final _formKey = GlobalKey<FormState>();
+
   bool _isLoading = false;
   bool _isPasswordVisible = false;
   bool _isConfirmPasswordVisible = false;
@@ -26,56 +30,67 @@ class SignUpScreenState extends State<SignUpScreen> {
       return;
     }
 
-    final name = _nameController.text.trim();
+    final username = _usernameController.text.trim();
+    final alamat = _alamatController.text.trim();
     final email = _emailController.text.trim();
     final password = _passwordController.text;
 
-    setState(() => _isLoading = true);
+    setState(() {
+      _isLoading = true;
+    });
 
     try {
-      await FirebaseAuth.instance.createUserWithEmailAndPassword(
-        email: email,
-        password: password,
-      );
+      UserCredential userCredential = await FirebaseAuth.instance
+          .createUserWithEmailAndPassword(email: email, password: password);
 
-      await FirebaseAuth.instance.currentUser?.updateDisplayName(name);
+      await FirebaseFirestore.instance
+          .collection('users')
+          .doc(userCredential.user!.uid)
+          .set({
+            'username': username,
+            'alamat': alamat,
+            'email': email,
+            'created_at': Timestamp.now(),
+          });
 
-      Navigator.of(context).pushReplacement(
-        MaterialPageRoute(builder: (context) => const HomeScreen()),
+      Navigator.pushReplacement(
+        context,
+        MaterialPageRoute(builder: (_) => const HomeScreen()),
       );
     } on FirebaseAuthException catch (error) {
       _showSnackBar(_getAuthErrorMessage(error.code));
     } catch (error) {
-      _showSnackBar('An error occurred: $error');
+      _showSnackBar('Terjadi kesalahan');
     } finally {
-      setState(() => _isLoading = false);
+      setState(() {
+        _isLoading = false;
+      });
     }
   }
 
   void _showSnackBar(String message) {
-    ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(message)));
+    ScaffoldMessenger.of(
+      context,
+    ).showSnackBar(SnackBar(content: Text(message)));
   }
 
   bool _isValidEmail(String email) {
-    const emailRegex =
+    String emailRegex =
         r"^[a-zA-Z0-9.!#$%&'*+/=?^_`{|}~-]+@[a-zA-Z0-9-]+(?:\.[a-zA-Z0-9-]+)*$";
-    return RegExp(emailRegex).hasMatch(email);
-  }
 
-  bool _isValidPassword(String password) {
-    return password.length >= 8;
+    return RegExp(emailRegex).hasMatch(email);
   }
 
   String _getAuthErrorMessage(String code) {
     switch (code) {
       case 'email-already-in-use':
-        return 'Email already registered. Please use a different email.';
+        return 'Email sudah digunakan';
       case 'weak-password':
-        return 'Password is too weak. Please use at least 8 characters.';
+        return 'Password terlalu lemah';
       case 'invalid-email':
-        return 'Invalid email format.';
+        return 'Format email tidak valid';
       default:
-        return 'An error occurred. Please try again.';
+        return 'Terjadi kesalahan';
     }
   }
 
@@ -86,35 +101,37 @@ class SignUpScreenState extends State<SignUpScreen> {
       body: SafeArea(
         child: Center(
           child: SingleChildScrollView(
-            padding: const EdgeInsets.symmetric(
-              horizontal: 24.0,
-              vertical: 32.0,
-            ),
+            padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 32),
             child: Column(
-              mainAxisSize: MainAxisSize.min,
               crossAxisAlignment: CrossAxisAlignment.stretch,
               children: [
-                const SizedBox(height: 24.0),
+                const SizedBox(height: 24),
+
                 Text(
                   'Daftar',
                   textAlign: TextAlign.center,
                   style: Theme.of(context).textTheme.headlineMedium?.copyWith(
-                        fontWeight: FontWeight.bold,
-                      ),
+                    fontWeight: FontWeight.bold,
+                  ),
                 ),
-                const SizedBox(height: 8.0),
+
+                const SizedBox(height: 8),
+
                 Text(
-                  'Buat akun baru Anda',
+                  'Buat akun baru',
                   textAlign: TextAlign.center,
-                  style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                        color: Colors.grey[600],
-                      ),
+                  style: Theme.of(
+                    context,
+                  ).textTheme.bodyMedium?.copyWith(color: Colors.grey[600]),
                 ),
-                const SizedBox(height: 32.0),
+
+                const SizedBox(height: 32),
+
                 Container(
+                  padding: const EdgeInsets.all(24),
                   decoration: BoxDecoration(
                     color: Colors.white,
-                    borderRadius: BorderRadius.circular(24.0),
+                    borderRadius: BorderRadius.circular(24),
                     boxShadow: [
                       BoxShadow(
                         color: Colors.black.withOpacity(0.05),
@@ -123,30 +140,29 @@ class SignUpScreenState extends State<SignUpScreen> {
                       ),
                     ],
                   ),
-                  padding: const EdgeInsets.all(24.0),
+
                   child: Form(
                     key: _formKey,
                     child: Column(
                       children: [
                         TextFormField(
-                          controller: _nameController,
-                          keyboardType: TextInputType.name,
+                          controller: _usernameController,
                           decoration: InputDecoration(
                             filled: true,
                             fillColor: const Color(0xFFF8F9FC),
-                            labelText: 'Nama Lengkap',
+                            labelText: 'Username',
                             prefixIcon: const Icon(
                               Icons.person,
                               color: Colors.grey,
                             ),
                             enabledBorder: OutlineInputBorder(
-                              borderRadius: BorderRadius.circular(16.0),
+                              borderRadius: BorderRadius.circular(16),
                               borderSide: BorderSide(
                                 color: Colors.grey.shade200,
                               ),
                             ),
                             focusedBorder: OutlineInputBorder(
-                              borderRadius: BorderRadius.circular(16.0),
+                              borderRadius: BorderRadius.circular(16),
                               borderSide: BorderSide(
                                 color: Theme.of(context).colorScheme.primary,
                               ),
@@ -154,12 +170,49 @@ class SignUpScreenState extends State<SignUpScreen> {
                           ),
                           validator: (value) {
                             if (value == null || value.isEmpty) {
-                              return 'Please enter your full name';
+                              return 'Masukkan username';
                             }
+
                             return null;
                           },
                         ),
-                        const SizedBox(height: 16.0),
+
+                        const SizedBox(height: 16),
+
+                        TextFormField(
+                          controller: _alamatController,
+                          decoration: InputDecoration(
+                            filled: true,
+                            fillColor: const Color(0xFFF8F9FC),
+                            labelText: 'Alamat',
+                            prefixIcon: const Icon(
+                              Icons.location_on,
+                              color: Colors.grey,
+                            ),
+                            enabledBorder: OutlineInputBorder(
+                              borderRadius: BorderRadius.circular(16),
+                              borderSide: BorderSide(
+                                color: Colors.grey.shade200,
+                              ),
+                            ),
+                            focusedBorder: OutlineInputBorder(
+                              borderRadius: BorderRadius.circular(16),
+                              borderSide: BorderSide(
+                                color: Theme.of(context).colorScheme.primary,
+                              ),
+                            ),
+                          ),
+                          validator: (value) {
+                            if (value == null || value.isEmpty) {
+                              return 'Masukkan alamat';
+                            }
+
+                            return null;
+                          },
+                        ),
+
+                        const SizedBox(height: 16),
+
                         TextFormField(
                           controller: _emailController,
                           keyboardType: TextInputType.emailAddress,
@@ -172,26 +225,31 @@ class SignUpScreenState extends State<SignUpScreen> {
                               color: Colors.grey,
                             ),
                             enabledBorder: OutlineInputBorder(
-                              borderRadius: BorderRadius.circular(16.0),
+                              borderRadius: BorderRadius.circular(16),
                               borderSide: BorderSide(
                                 color: Colors.grey.shade200,
                               ),
                             ),
                             focusedBorder: OutlineInputBorder(
-                              borderRadius: BorderRadius.circular(16.0),
+                              borderRadius: BorderRadius.circular(16),
                               borderSide: BorderSide(
                                 color: Theme.of(context).colorScheme.primary,
                               ),
                             ),
                           ),
                           validator: (value) {
-                            if (value == null || value.isEmpty || !_isValidEmail(value)) {
-                              return 'Please enter a valid email';
+                            if (value == null ||
+                                value.isEmpty ||
+                                !_isValidEmail(value)) {
+                              return 'Masukkan email valid';
                             }
+
                             return null;
                           },
                         ),
-                        const SizedBox(height: 16.0),
+
+                        const SizedBox(height: 16),
+
                         TextFormField(
                           controller: _passwordController,
                           obscureText: !_isPasswordVisible,
@@ -205,7 +263,9 @@ class SignUpScreenState extends State<SignUpScreen> {
                             ),
                             suffixIcon: IconButton(
                               icon: Icon(
-                                _isPasswordVisible ? Icons.visibility : Icons.visibility_off,
+                                _isPasswordVisible
+                                    ? Icons.visibility
+                                    : Icons.visibility_off,
                                 color: Colors.grey,
                               ),
                               onPressed: () {
@@ -215,13 +275,13 @@ class SignUpScreenState extends State<SignUpScreen> {
                               },
                             ),
                             enabledBorder: OutlineInputBorder(
-                              borderRadius: BorderRadius.circular(16.0),
+                              borderRadius: BorderRadius.circular(16),
                               borderSide: BorderSide(
                                 color: Colors.grey.shade200,
                               ),
                             ),
                             focusedBorder: OutlineInputBorder(
-                              borderRadius: BorderRadius.circular(16.0),
+                              borderRadius: BorderRadius.circular(16),
                               borderSide: BorderSide(
                                 color: Theme.of(context).colorScheme.primary,
                               ),
@@ -229,61 +289,68 @@ class SignUpScreenState extends State<SignUpScreen> {
                           ),
                           validator: (value) {
                             if (value == null || value.isEmpty) {
-                              return 'Please enter your password';
+                              return 'Masukkan password';
                             }
-                            if (!_isValidPassword(value)) {
-                              return 'Password must be at least 8 characters';
+
+                            if (value.length < 6) {
+                              return 'Password minimal 6 karakter';
                             }
+
                             return null;
                           },
                         ),
-                        const SizedBox(height: 16.0),
+
+                        const SizedBox(height: 16),
+
                         TextFormField(
                           controller: _confirmPasswordController,
                           obscureText: !_isConfirmPasswordVisible,
                           decoration: InputDecoration(
                             filled: true,
                             fillColor: const Color(0xFFF8F9FC),
-                            labelText: 'Confirm Password',
+                            labelText: 'Konfirmasi Password',
                             prefixIcon: const Icon(
                               Icons.lock,
                               color: Colors.grey,
                             ),
                             suffixIcon: IconButton(
                               icon: Icon(
-                                _isConfirmPasswordVisible ? Icons.visibility : Icons.visibility_off,
+                                _isConfirmPasswordVisible
+                                    ? Icons.visibility
+                                    : Icons.visibility_off,
                                 color: Colors.grey,
                               ),
                               onPressed: () {
                                 setState(() {
-                                  _isConfirmPasswordVisible = !_isConfirmPasswordVisible;
+                                  _isConfirmPasswordVisible =
+                                      !_isConfirmPasswordVisible;
                                 });
                               },
                             ),
                             enabledBorder: OutlineInputBorder(
-                              borderRadius: BorderRadius.circular(16.0),
+                              borderRadius: BorderRadius.circular(16),
                               borderSide: BorderSide(
                                 color: Colors.grey.shade200,
                               ),
                             ),
                             focusedBorder: OutlineInputBorder(
-                              borderRadius: BorderRadius.circular(16.0),
+                              borderRadius: BorderRadius.circular(16),
                               borderSide: BorderSide(
                                 color: Theme.of(context).colorScheme.primary,
                               ),
                             ),
                           ),
                           validator: (value) {
-                            if (value == null || value.isEmpty) {
-                              return 'Please confirm your password';
-                            }
                             if (value != _passwordController.text) {
-                              return 'Passwords do not match';
+                              return 'Password tidak sama';
                             }
+
                             return null;
                           },
                         ),
-                        const SizedBox(height: 28.0),
+
+                        const SizedBox(height: 28),
+
                         SizedBox(
                           width: double.infinity,
                           height: 54,
@@ -292,14 +359,14 @@ class SignUpScreenState extends State<SignUpScreen> {
                             style: ElevatedButton.styleFrom(
                               backgroundColor: const Color(0xFF5E7AC4),
                               shape: RoundedRectangleBorder(
-                                borderRadius: BorderRadius.circular(16.0),
+                                borderRadius: BorderRadius.circular(16),
                               ),
                               elevation: 0,
                             ),
                             child: _isLoading
                                 ? const SizedBox(
-                                    height: 20,
                                     width: 20,
+                                    height: 20,
                                     child: CircularProgressIndicator(
                                       color: Colors.white,
                                       strokeWidth: 2,
@@ -308,9 +375,9 @@ class SignUpScreenState extends State<SignUpScreen> {
                                 : const Text(
                                     'Daftar',
                                     style: TextStyle(
+                                      color: Colors.white,
                                       fontSize: 16,
                                       fontWeight: FontWeight.w600,
-                                      color: Colors.white,
                                     ),
                                   ),
                           ),
@@ -319,13 +386,15 @@ class SignUpScreenState extends State<SignUpScreen> {
                     ),
                   ),
                 ),
-                const SizedBox(height: 20.0),
+
+                const SizedBox(height: 20),
+
                 Text.rich(
                   TextSpan(
                     text: 'Sudah punya akun? ',
-                    style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                          color: Colors.grey[700],
-                        ),
+                    style: Theme.of(
+                      context,
+                    ).textTheme.bodyMedium?.copyWith(color: Colors.grey[700]),
                     children: [
                       TextSpan(
                         text: 'Masuk',
@@ -338,7 +407,7 @@ class SignUpScreenState extends State<SignUpScreen> {
                             Navigator.pushReplacement(
                               context,
                               MaterialPageRoute(
-                                builder: (context) => const SignInScreen(),
+                                builder: (_) => const SignInScreen(),
                               ),
                             );
                           },

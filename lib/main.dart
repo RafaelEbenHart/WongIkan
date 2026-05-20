@@ -25,7 +25,7 @@ class MyApp extends StatelessWidget {
         colorScheme: ColorScheme.fromSeed(seedColor: const Color(0xFF5E7AC4)),
         fontFamily: GoogleFonts.poppins().fontFamily,
       ),
-      home: const SignInScreen(),
+      home: const HomeScreen(),
     );
   }
 }
