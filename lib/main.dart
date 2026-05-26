@@ -1,7 +1,6 @@
 import 'package:wongiwak/screens/home_screen.dart';
 import 'package:wongiwak/screens/sign_in_screen.dart';
-import 'package:wongiwak/screens/sign_up_screen.dart  ';
-
+import 'package:wongiwak/screens/sign_up_screen.dart';
 import 'package:flutter/material.dart';
 import 'package:firebase_core/firebase_core.dart';
 import 'package:google_fonts/google_fonts.dart';
@@ -19,7 +18,7 @@ class MyApp extends StatelessWidget {
   Widget build(BuildContext context) {
     return MaterialApp(
       debugShowCheckedModeBanner: false,
-      title: 'Fasum',
+      title: 'WongIkan',
       theme: ThemeData(
         useMaterial3: true,
         colorScheme: ColorScheme.fromSeed(seedColor: const Color(0xFF5E7AC4)),
