@@ -5,7 +5,7 @@ import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 import 'package:share_plus/share_plus.dart';
 import 'package:url_launcher/url_launcher.dart';
-import 'package:firebase_auth/firebase_auth.dart';
+import 'package:wongiwak/screens/sign_in_screen.dart';
 
 class DetailScreen extends StatefulWidget {
   final String ikanId;
@@ -47,6 +47,17 @@ class _DetailScreenState extends State<DetailScreen> {
       '🐟 ${data['nama']}\n'
       '💰 ${formatRupiah(data['harga'])} / Kg\n'
       '📍 ${data['lokasi']}',
+    );
+  }
+
+  void _bukaKomentar(String ikanId) {
+    showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      useSafeArea: false,
+      backgroundColor: Colors.transparent,
+      constraints: const BoxConstraints(maxWidth: double.infinity),
+      builder: (_) => KomentarSheet(ikanId: ikanId),
     );
   }
 
@@ -151,6 +162,43 @@ class _DetailScreenState extends State<DetailScreen> {
                     child: gambar.toString().isNotEmpty
                         ? Image.memory(base64Decode(gambar), fit: BoxFit.cover)
                         : const Icon(Icons.image, size: 80),
+                  ),
+                  const SizedBox(height: 16),
+                  Padding(
+                    padding: const EdgeInsets.symmetric(horizontal: 16),
+                    child: GestureDetector(
+                      onTap: () => _bukaKomentar(widget.ikanId),
+                      child: Container(
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 16,
+                          vertical: 10,
+                        ),
+                        decoration: BoxDecoration(
+                          color: Colors.white,
+                          borderRadius: BorderRadius.circular(12),
+                        ),
+                        child: StreamBuilder<QuerySnapshot>(
+                          stream: firestore
+                              .collection('ikan')
+                              .doc(widget.ikanId)
+                              .collection('komentar')
+                              .snapshots(),
+                          builder: (context, snap) {
+                            final count = snap.hasData
+                                ? snap.data!.docs.length
+                                : 0;
+                            return Row(
+                              mainAxisSize: MainAxisSize.min,
+                              children: [
+                                const Icon(Icons.comment_outlined, size: 20),
+                                const SizedBox(width: 6),
+                                Text("$count Komentar"),
+                              ],
+                            );
+                          },
+                        ),
+                      ),
+                    ),
                   ),
                   const SizedBox(height: 20),
                   Padding(
@@ -384,8 +432,6 @@ class _DetailScreenState extends State<DetailScreen> {
                             ],
                           ),
                         ),
-                        const SizedBox(height: 20),
-                        KomentarSection(ikanId: widget.ikanId),
                         const SizedBox(height: 30),
                       ],
                     ),
@@ -400,16 +446,16 @@ class _DetailScreenState extends State<DetailScreen> {
   }
 }
 
-class KomentarSection extends StatefulWidget {
+class KomentarSheet extends StatefulWidget {
   final String ikanId;
 
-  const KomentarSection({super.key, required this.ikanId});
+  const KomentarSheet({super.key, required this.ikanId});
 
   @override
-  State<KomentarSection> createState() => _KomentarSectionState();
+  State<KomentarSheet> createState() => _KomentarSheetState();
 }
 
-class _KomentarSectionState extends State<KomentarSection> {
+class _KomentarSheetState extends State<KomentarSheet> {
   final FirebaseFirestore firestore = FirebaseFirestore.instance;
   final FirebaseAuth auth = FirebaseAuth.instance;
   final TextEditingController _komentarController = TextEditingController();
@@ -421,23 +467,70 @@ class _KomentarSectionState extends State<KomentarSection> {
     super.dispose();
   }
 
+  bool get _sudahLogin => auth.currentUser != null;
+
   Future<String> _getUsername() async {
     final user = auth.currentUser;
-    if (user == null) return 'Anonim';
+    if (user == null) return 'Pengguna';
     try {
       final doc = await firestore.collection('users').doc(user.uid).get();
       if (doc.exists) {
         final data = doc.data() as Map<String, dynamic>;
-        return data['username'] ?? 'Anonim';
+        return data['username'] ?? 'Pengguna';
       }
     } catch (_) {}
-    return 'Anonim';
+    return 'Pengguna';
+  }
+
+  void _tampilDialogLogin() {
+    showDialog(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+        title: const Text(
+          "Perlu Login",
+          style: TextStyle(fontWeight: FontWeight.bold),
+        ),
+        content: const Text(
+          "Kamu harus login atau membuat akun terlebih dahulu untuk bisa mengirim komentar.",
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(ctx),
+            child: const Text("Batal", style: TextStyle(color: Colors.black54)),
+          ),
+          ElevatedButton(
+            style: ElevatedButton.styleFrom(
+              backgroundColor: const Color(0xff6C8EF5),
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(10),
+              ),
+            ),
+            onPressed: () {
+              Navigator.pop(ctx);
+              Navigator.push(
+                context,
+                MaterialPageRoute(builder: (_) => const SignInScreen()),
+              );
+            },
+            child: const Text("Login", style: TextStyle(color: Colors.white)),
+          ),
+        ],
+      ),
+    );
   }
 
   Future<void> _kirimKomentar() async {
     final teks = _komentarController.text.trim();
     if (teks.isEmpty) return;
+
+    if (!_sudahLogin) {
+      _tampilDialogLogin();
+      return;
+    }
+
     setState(() => _isSending = true);
+
     try {
       final username = await _getUsername();
       await firestore
@@ -464,144 +557,202 @@ class _KomentarSectionState extends State<KomentarSection> {
 
   @override
   Widget build(BuildContext context) {
-    return Container(
-      width: double.infinity,
-      padding: const EdgeInsets.all(16),
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(20),
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          const Text(
-            "Komentar",
-            style: TextStyle(fontWeight: FontWeight.bold, fontSize: 18),
+    final topPadding = MediaQuery.of(context).padding.top;
+
+    return DraggableScrollableSheet(
+      initialChildSize: 0.6,
+      minChildSize: 0.4,
+      maxChildSize: 1.0,
+      builder: (context, scrollController) {
+        return Container(
+          width: double.infinity,
+          decoration: const BoxDecoration(
+            color: Colors.white,
+            borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
           ),
-          const SizedBox(height: 14),
-          StreamBuilder<QuerySnapshot>(
-            stream: firestore
-                .collection('ikan')
-                .doc(widget.ikanId)
-                .collection('komentar')
-                .orderBy('created_at', descending: true)
-                .snapshots(),
-            builder: (context, snapshot) {
-              if (!snapshot.hasData) {
-                return const Center(child: CircularProgressIndicator());
-              }
-
-              final komentar = snapshot.data!.docs;
-
-              if (komentar.isEmpty) {
-                return const Padding(
-                  padding: EdgeInsets.only(bottom: 12),
-                  child: Text(
-                    "Belum ada komentar",
-                    style: TextStyle(color: Colors.black45),
-                  ),
-                );
-              }
-
-              return Column(
-                children: komentar.map((doc) {
-                  final k = doc.data() as Map<String, dynamic>;
-                  final waktu = k['created_at'] != null
-                      ? DateFormat(
-                          'dd MMM • HH:mm',
-                        ).format((k['created_at'] as Timestamp).toDate())
-                      : '';
-                  return Container(
-                    width: double.infinity,
-                    margin: const EdgeInsets.only(bottom: 12),
-                    padding: const EdgeInsets.all(12),
-                    decoration: BoxDecoration(
-                      color: Colors.grey.shade100,
-                      borderRadius: BorderRadius.circular(14),
-                    ),
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Row(
-                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                          children: [
-                            Text(
-                              k['username'] ?? 'Anonim',
-                              style: const TextStyle(
-                                fontWeight: FontWeight.bold,
-                              ),
-                            ),
-                            Text(
-                              waktu,
-                              style: const TextStyle(
-                                color: Colors.black38,
-                                fontSize: 12,
-                              ),
-                            ),
-                          ],
-                        ),
-                        const SizedBox(height: 4),
-                        Text(k['isi'] ?? ''),
-                      ],
-                    ),
-                  );
-                }).toList(),
-              );
-            },
-          ),
-          const SizedBox(height: 8),
-          Row(
-            crossAxisAlignment: CrossAxisAlignment.end,
+          child: Column(
             children: [
-              Expanded(
-                child: TextField(
-                  controller: _komentarController,
-                  maxLines: null,
-                  textInputAction: TextInputAction.send,
-                  onSubmitted: (_) => _kirimKomentar(),
-                  decoration: InputDecoration(
-                    hintText: 'Tulis komentar...',
-                    hintStyle: const TextStyle(color: Colors.black38),
-                    contentPadding: const EdgeInsets.symmetric(
-                      horizontal: 16,
-                      vertical: 12,
-                    ),
-                    filled: true,
-                    fillColor: Colors.grey.shade100,
-                    border: OutlineInputBorder(
-                      borderRadius: BorderRadius.circular(14),
-                      borderSide: BorderSide.none,
-                    ),
-                  ),
+              const SizedBox(height: 12),
+              Container(
+                width: 40,
+                height: 4,
+                decoration: BoxDecoration(
+                  color: Colors.grey.shade300,
+                  borderRadius: BorderRadius.circular(10),
                 ),
               ),
-              const SizedBox(width: 10),
-              _isSending
-                  ? const SizedBox(
-                      width: 42,
-                      height: 42,
-                      child: CircularProgressIndicator(strokeWidth: 2),
-                    )
-                  : GestureDetector(
-                      onTap: _kirimKomentar,
-                      child: Container(
-                        width: 46,
-                        height: 46,
-                        decoration: BoxDecoration(
-                          color: const Color(0xff6C8EF5),
-                          borderRadius: BorderRadius.circular(14),
+              const SizedBox(height: 12),
+              Padding(
+                padding: EdgeInsets.only(top: topPadding > 0 ? 0 : 0),
+                child: const Text(
+                  "Komentar",
+                  style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
+                ),
+              ),
+              const Divider(height: 20),
+              Expanded(
+                child: StreamBuilder<QuerySnapshot>(
+                  stream: firestore
+                      .collection('ikan')
+                      .doc(widget.ikanId)
+                      .collection('komentar')
+                      .orderBy('created_at', descending: true)
+                      .snapshots(),
+                  builder: (context, snapshot) {
+                    if (!snapshot.hasData) {
+                      return const Center(child: CircularProgressIndicator());
+                    }
+
+                    final komentar = snapshot.data!.docs;
+
+                    if (komentar.isEmpty) {
+                      return const Center(
+                        child: Text(
+                          "Belum ada komentar.\nJadi yang pertama!",
+                          textAlign: TextAlign.center,
+                          style: TextStyle(color: Colors.black45),
                         ),
-                        child: const Icon(
-                          Icons.send,
-                          color: Colors.white,
-                          size: 20,
+                      );
+                    }
+
+                    return ListView.builder(
+                      controller: scrollController,
+                      padding: EdgeInsets.zero,
+                      itemCount: komentar.length,
+                      itemBuilder: (context, index) {
+                        final k =
+                            komentar[index].data() as Map<String, dynamic>;
+                        final waktu = k['created_at'] != null
+                            ? DateFormat(
+                                'dd MMM • HH:mm',
+                              ).format((k['created_at'] as Timestamp).toDate())
+                            : '';
+
+                        return Container(
+                          width: double.infinity,
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 16,
+                            vertical: 12,
+                          ),
+                          decoration: BoxDecoration(
+                            border: Border(
+                              bottom: BorderSide(color: Colors.grey.shade100),
+                            ),
+                          ),
+                          child: Row(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              CircleAvatar(
+                                radius: 18,
+                                backgroundColor: Colors.blue.shade100,
+                                child: const Icon(
+                                  Icons.person,
+                                  color: Colors.blue,
+                                  size: 18,
+                                ),
+                              ),
+                              const SizedBox(width: 10),
+                              Expanded(
+                                child: Column(
+                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                  children: [
+                                    Row(
+                                      mainAxisAlignment:
+                                          MainAxisAlignment.spaceBetween,
+                                      children: [
+                                        Text(
+                                          k['username'] ?? 'Pengguna',
+                                          style: const TextStyle(
+                                            fontWeight: FontWeight.bold,
+                                          ),
+                                        ),
+                                        Text(
+                                          waktu,
+                                          style: const TextStyle(
+                                            color: Colors.black38,
+                                            fontSize: 12,
+                                          ),
+                                        ),
+                                      ],
+                                    ),
+                                    const SizedBox(height: 4),
+                                    Text(k['isi'] ?? ''),
+                                  ],
+                                ),
+                              ),
+                            ],
+                          ),
+                        );
+                      },
+                    );
+                  },
+                ),
+              ),
+              const Divider(height: 1),
+              Padding(
+                padding: EdgeInsets.only(
+                  left: 16,
+                  right: 16,
+                  top: 10,
+                  bottom: MediaQuery.of(context).viewInsets.bottom + 12,
+                ),
+                child: Row(
+                  crossAxisAlignment: CrossAxisAlignment.end,
+                  children: [
+                    Expanded(
+                      child: TextField(
+                        controller: _komentarController,
+                        maxLines: null,
+                        textInputAction: TextInputAction.send,
+                        onSubmitted: (_) => _kirimKomentar(),
+                        decoration: InputDecoration(
+                          hintText: _sudahLogin
+                              ? 'Tulis komentar...'
+                              : 'Login untuk berkomentar...',
+                          hintStyle: const TextStyle(color: Colors.black38),
+                          contentPadding: const EdgeInsets.symmetric(
+                            horizontal: 16,
+                            vertical: 12,
+                          ),
+                          filled: true,
+                          fillColor: Colors.grey.shade100,
+                          border: OutlineInputBorder(
+                            borderRadius: BorderRadius.circular(14),
+                            borderSide: BorderSide.none,
+                          ),
                         ),
                       ),
                     ),
+                    const SizedBox(width: 10),
+                    _isSending
+                        ? const SizedBox(
+                            width: 42,
+                            height: 42,
+                            child: CircularProgressIndicator(strokeWidth: 2),
+                          )
+                        : GestureDetector(
+                            onTap: _kirimKomentar,
+                            child: Container(
+                              width: 46,
+                              height: 46,
+                              decoration: BoxDecoration(
+                                color: const Color(0xff6C8EF5),
+                                borderRadius: BorderRadius.circular(14),
+                              ),
+                              child: const Icon(
+                                Icons.send,
+                                color: Colors.white,
+                                size: 20,
+                              ),
+                            ),
+                          ),
+                  ],
+                ),
+              ),
             ],
           ),
-        ],
-      ),
+        );
+      },
     );
   }
 }
