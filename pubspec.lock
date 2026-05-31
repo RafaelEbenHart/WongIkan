@@ -352,14 +352,6 @@ packages:
       url: "https://pub.dev"
     source: hosted
     version: "4.1.2"
-  image_compress:
-    dependency: "direct main"
-    description:
-      name: image_compress
-      sha256: e0356d9a444ab880a2651da40ef75c735e7721bc0f672826cb9b153d45473912
-      url: "https://pub.dev"
-    source: hosted
-    version: "0.0.2"
   image_picker:
     dependency: "direct main"
     description:
