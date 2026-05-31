@@ -100,7 +100,6 @@ class _DetailScreenState extends State<DetailScreen> {
               ? (data['created_at'] as Timestamp).toDate()
               : DateTime.now();
 
-          // Bungkus seluruh body dengan CommentTrigger
           return CommentTrigger(
             onSwipeUp: () => _bukaKomentar(widget.ikanId),
             child: SafeArea(
@@ -435,7 +434,6 @@ class _DetailScreenState extends State<DetailScreen> {
                               ],
                             ),
                           ),
-                          // Padding bawah agar konten tidak tertutup hint icon
                           const SizedBox(height: 60),
                         ],
                       ),
@@ -450,10 +448,6 @@ class _DetailScreenState extends State<DetailScreen> {
     );
   }
 }
-
-// ─────────────────────────────────────────────────
-// KOMENTAR SHEET — diperbaiki total
-// ─────────────────────────────────────────────────
 
 class KomentarSheet extends StatefulWidget {
   final String ikanId;
@@ -568,189 +562,205 @@ class _KomentarSheetState extends State<KomentarSheet> {
 
   @override
   Widget build(BuildContext context) {
-    return Padding(
-      padding: MediaQuery.of(context).viewInsets,
-      child: DraggableScrollableSheet(
-        initialChildSize: 0.6,
-        minChildSize: 0.4,
-        maxChildSize: 0.92,
-        expand: false,
-        builder: (context, scrollController) {
-          return Container(
-            decoration: const BoxDecoration(
-              color: Colors.white,
-              borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
-            ),
-            child: Column(
-              children: [
-                const SizedBox(height: 12),
-                Container(
-                  width: 40,
-                  height: 4,
-                  decoration: BoxDecoration(
-                    color: Colors.grey.shade300,
-                    borderRadius: BorderRadius.circular(10),
+    final bottomInset = MediaQuery.of(context).viewInsets.bottom;
+
+    return SafeArea(
+      top: false,
+      child: Padding(
+        padding: EdgeInsets.only(bottom: bottomInset),
+        child: DraggableScrollableSheet(
+          initialChildSize: 0.6,
+          minChildSize: 0.4,
+          maxChildSize: 0.92,
+          expand: false,
+          builder: (context, scrollController) {
+            return Container(
+              decoration: const BoxDecoration(
+                color: Colors.white,
+                borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
+              ),
+              child: Column(
+                children: [
+                  // ── Handle ──
+                  const SizedBox(height: 12),
+                  Container(
+                    width: 40,
+                    height: 4,
+                    decoration: BoxDecoration(
+                      color: Colors.grey.shade300,
+                      borderRadius: BorderRadius.circular(10),
+                    ),
                   ),
-                ),
-                const SizedBox(height: 12),
-                const Text(
-                  "Komentar",
-                  style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
-                ),
-                const Divider(height: 20),
-                Expanded(
-                  child: StreamBuilder<QuerySnapshot>(
-                    stream: firestore
-                        .collection('ikan')
-                        .doc(widget.ikanId)
-                        .collection('komentar')
-                        .orderBy('created_at', descending: true)
-                        .snapshots(),
-                    builder: (context, snapshot) {
-                      if (!snapshot.hasData) {
-                        return const Center(child: CircularProgressIndicator());
-                      }
+                  const SizedBox(height: 12),
+                  const Text(
+                    "Komentar",
+                    style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
+                  ),
+                  const Divider(height: 20),
 
-                      final komentar = snapshot.data!.docs;
+                  // ── List komentar — Expanded agar tidak bisa scroll melewati batas sheet ──
+                  Expanded(
+                    child: StreamBuilder<QuerySnapshot>(
+                      stream: firestore
+                          .collection('ikan')
+                          .doc(widget.ikanId)
+                          .collection('komentar')
+                          .orderBy('created_at', descending: true)
+                          .snapshots(),
+                      builder: (context, snapshot) {
+                        if (!snapshot.hasData) {
+                          return const Center(
+                            child: CircularProgressIndicator(),
+                          );
+                        }
 
-                      if (komentar.isEmpty) {
-                        return const Center(
-                          child: Text(
-                            "Belum ada komentar.\nJadi yang pertama!",
-                            textAlign: TextAlign.center,
-                            style: TextStyle(color: Colors.black45),
-                          ),
-                        );
-                      }
+                        final komentar = snapshot.data!.docs;
 
-                      return ListView.builder(
-                        controller: scrollController,
-                        padding: const EdgeInsets.symmetric(horizontal: 16),
-                        itemCount: komentar.length,
-                        itemBuilder: (context, index) {
-                          final k =
-                              komentar[index].data() as Map<String, dynamic>;
-                          final waktu = k['created_at'] != null
-                              ? DateFormat('dd MMM • HH:mm').format(
-                                  (k['created_at'] as Timestamp).toDate(),
-                                )
-                              : '';
-
-                          return Padding(
-                            padding: const EdgeInsets.only(bottom: 16),
-                            child: Row(
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              children: [
-                                CircleAvatar(
-                                  radius: 18,
-                                  backgroundColor: Colors.blue.shade100,
-                                  child: const Icon(
-                                    Icons.person,
-                                    color: Colors.blue,
-                                    size: 18,
-                                  ),
-                                ),
-                                const SizedBox(width: 10),
-                                Expanded(
-                                  child: Column(
-                                    crossAxisAlignment:
-                                        CrossAxisAlignment.start,
-                                    children: [
-                                      Row(
-                                        mainAxisAlignment:
-                                            MainAxisAlignment.spaceBetween,
-                                        children: [
-                                          Text(
-                                            k['username'] ?? 'Pengguna',
-                                            style: const TextStyle(
-                                              fontWeight: FontWeight.bold,
-                                            ),
-                                          ),
-                                          Text(
-                                            waktu,
-                                            style: const TextStyle(
-                                              color: Colors.black38,
-                                              fontSize: 12,
-                                            ),
-                                          ),
-                                        ],
-                                      ),
-                                      const SizedBox(height: 4),
-                                      Text(k['isi'] ?? ''),
-                                    ],
-                                  ),
-                                ),
-                              ],
+                        if (komentar.isEmpty) {
+                          return const Center(
+                            child: Text(
+                              "Belum ada komentar.\nJadi yang pertama!",
+                              textAlign: TextAlign.center,
+                              style: TextStyle(color: Colors.black45),
                             ),
                           );
-                        },
-                      );
-                    },
+                        }
+
+                        return ListView.builder(
+                          controller: scrollController,
+                          padding: const EdgeInsets.symmetric(horizontal: 16),
+                          itemCount: komentar.length,
+                          itemBuilder: (context, index) {
+                            final k =
+                                komentar[index].data() as Map<String, dynamic>;
+                            final waktu = k['created_at'] != null
+                                ? DateFormat('dd MMM • HH:mm').format(
+                                    (k['created_at'] as Timestamp).toDate(),
+                                  )
+                                : '';
+
+                            return Padding(
+                              padding: const EdgeInsets.only(bottom: 16),
+                              child: Row(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  CircleAvatar(
+                                    radius: 18,
+                                    backgroundColor: Colors.blue.shade100,
+                                    child: const Icon(
+                                      Icons.person,
+                                      color: Colors.blue,
+                                      size: 18,
+                                    ),
+                                  ),
+                                  const SizedBox(width: 10),
+                                  Expanded(
+                                    child: Column(
+                                      crossAxisAlignment:
+                                          CrossAxisAlignment.start,
+                                      children: [
+                                        Row(
+                                          mainAxisAlignment:
+                                              MainAxisAlignment.spaceBetween,
+                                          children: [
+                                            Text(
+                                              k['username'] ?? 'Pengguna',
+                                              style: const TextStyle(
+                                                fontWeight: FontWeight.bold,
+                                              ),
+                                            ),
+                                            Text(
+                                              waktu,
+                                              style: const TextStyle(
+                                                color: Colors.black38,
+                                                fontSize: 12,
+                                              ),
+                                            ),
+                                          ],
+                                        ),
+                                        const SizedBox(height: 4),
+                                        Text(k['isi'] ?? ''),
+                                      ],
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            );
+                          },
+                        );
+                      },
+                    ),
                   ),
-                ),
-                const Divider(height: 1),
-                Padding(
-                  padding: const EdgeInsets.symmetric(
-                    horizontal: 16,
-                    vertical: 10,
-                  ),
-                  child: Row(
-                    crossAxisAlignment: CrossAxisAlignment.end,
-                    children: [
-                      Expanded(
-                        child: TextField(
-                          controller: _komentarController,
-                          maxLines: null,
-                          textInputAction: TextInputAction.send,
-                          onSubmitted: (_) => _kirimKomentar(),
-                          decoration: InputDecoration(
-                            hintText: _sudahLogin
-                                ? 'Tulis komentar...'
-                                : 'Login untuk berkomentar...',
-                            hintStyle: const TextStyle(color: Colors.black38),
-                            contentPadding: const EdgeInsets.symmetric(
-                              horizontal: 16,
-                              vertical: 12,
-                            ),
-                            filled: true,
-                            fillColor: Colors.grey.shade100,
-                            border: OutlineInputBorder(
-                              borderRadius: BorderRadius.circular(14),
-                              borderSide: BorderSide.none,
+
+                  // ── Input box — fixed di atas navbar ──
+                  const Divider(height: 1),
+                  Padding(
+                    padding: EdgeInsets.fromLTRB(
+                      16,
+                      10,
+                      16,
+                      bottomInset > 0 ? 10 : 8,
+                    ),
+                    child: Row(
+                      crossAxisAlignment: CrossAxisAlignment.end,
+                      children: [
+                        Expanded(
+                          child: TextField(
+                            controller: _komentarController,
+                            maxLines: null,
+                            textInputAction: TextInputAction.send,
+                            onSubmitted: (_) => _kirimKomentar(),
+                            decoration: InputDecoration(
+                              hintText: _sudahLogin
+                                  ? 'Tulis komentar...'
+                                  : 'Login untuk berkomentar...',
+                              hintStyle: const TextStyle(color: Colors.black38),
+                              contentPadding: const EdgeInsets.symmetric(
+                                horizontal: 16,
+                                vertical: 12,
+                              ),
+                              filled: true,
+                              fillColor: Colors.grey.shade100,
+                              border: OutlineInputBorder(
+                                borderRadius: BorderRadius.circular(14),
+                                borderSide: BorderSide.none,
+                              ),
                             ),
                           ),
                         ),
-                      ),
-                      const SizedBox(width: 10),
-                      _isSending
-                          ? const SizedBox(
-                              width: 42,
-                              height: 42,
-                              child: CircularProgressIndicator(strokeWidth: 2),
-                            )
-                          : GestureDetector(
-                              onTap: _kirimKomentar,
-                              child: Container(
-                                width: 46,
-                                height: 46,
-                                decoration: BoxDecoration(
-                                  color: const Color(0xff6C8EF5),
-                                  borderRadius: BorderRadius.circular(14),
+                        const SizedBox(width: 10),
+                        _isSending
+                            ? const SizedBox(
+                                width: 42,
+                                height: 42,
+                                child: CircularProgressIndicator(
+                                  strokeWidth: 2,
                                 ),
-                                child: const Icon(
-                                  Icons.send,
-                                  color: Colors.white,
-                                  size: 20,
+                              )
+                            : GestureDetector(
+                                onTap: _kirimKomentar,
+                                child: Container(
+                                  width: 46,
+                                  height: 46,
+                                  decoration: BoxDecoration(
+                                    color: const Color(0xff6C8EF5),
+                                    borderRadius: BorderRadius.circular(14),
+                                  ),
+                                  child: const Icon(
+                                    Icons.send,
+                                    color: Colors.white,
+                                    size: 20,
+                                  ),
                                 ),
                               ),
-                            ),
-                    ],
+                      ],
+                    ),
                   ),
-                ),
-              ],
-            ),
-          );
-        },
+                ],
+              ),
+            );
+          },
+        ),
       ),
     );
   }
