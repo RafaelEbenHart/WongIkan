@@ -7,7 +7,6 @@ import 'package:intl/intl.dart';
 import 'package:share_plus/share_plus.dart';
 import 'package:url_launcher/url_launcher.dart';
 import 'package:wongiwak/screens/sign_in_screen.dart';
-import 'package:wongiwak/widgets/commentTrigger.dart';
 
 class DetailScreen extends StatefulWidget {
   final String ikanId;
@@ -56,9 +55,8 @@ class _DetailScreenState extends State<DetailScreen> {
     showModalBottomSheet(
       context: context,
       isScrollControlled: true,
-      useSafeArea: false,
+      useRootNavigator: true,
       backgroundColor: Colors.transparent,
-      constraints: const BoxConstraints(maxWidth: double.infinity),
       builder: (_) => KomentarSheet(ikanId: ikanId),
     );
   }
@@ -201,6 +199,235 @@ class _DetailScreenState extends State<DetailScreen> {
                       ),
                     ),
                   ),
+                  const SizedBox(height: 20),
+                  Padding(
+                    padding: const EdgeInsets.symmetric(horizontal: 16),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          nama,
+                          style: const TextStyle(
+                            fontSize: 28,
+                            fontWeight: FontWeight.bold,
+                          ),
+                        ),
+                        const SizedBox(height: 8),
+                        Text(
+                          kategori,
+                          style: const TextStyle(
+                            color: Color(0xFF6C8EF5),
+                            fontWeight: FontWeight.w600,
+                            fontSize: 16,
+                          ),
+                        ),
+                        const SizedBox(height: 12),
+                        Text(
+                          "${formatRupiah(harga)} / Kg",
+                          style: const TextStyle(
+                            color: Color(0xff6C8EF5),
+                            fontSize: 22,
+                            fontWeight: FontWeight.bold,
+                          ),
+                        ),
+                        const SizedBox(height: 18),
+                        Container(
+                          width: double.infinity,
+                          padding: const EdgeInsets.all(16),
+                          decoration: BoxDecoration(
+                            color: Colors.white,
+                            borderRadius: BorderRadius.circular(20),
+                          ),
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              const Text(
+                                "Info Penjual",
+                                style: TextStyle(
+                                  fontWeight: FontWeight.bold,
+                                  fontSize: 18,
+                                ),
+                              ),
+                              const SizedBox(height: 14),
+                              Row(
+                                children: [
+                                  CircleAvatar(
+                                    radius: 24,
+                                    backgroundColor: Colors.blue.shade100,
+                                    child: const Icon(
+                                      Icons.person,
+                                      color: Colors.blue,
+                                    ),
+                                  ),
+                                  const SizedBox(width: 12),
+                                  Expanded(
+                                    child: Column(
+                                      crossAxisAlignment:
+                                          CrossAxisAlignment.start,
+                                      children: [
+                                        Text(
+                                          username,
+                                          style: const TextStyle(
+                                            fontWeight: FontWeight.bold,
+                                            fontSize: 16,
+                                          ),
+                                        ),
+                                        const SizedBox(height: 4),
+                                        Text(
+                                          alamat,
+                                          style: const TextStyle(
+                                            color: Colors.black54,
+                                          ),
+                                        ),
+                                      ],
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            ],
+                          ),
+                        ),
+                        const SizedBox(height: 20),
+                        Container(
+                          width: double.infinity,
+                          padding: const EdgeInsets.all(16),
+                          decoration: BoxDecoration(
+                            color: Colors.white,
+                            borderRadius: BorderRadius.circular(20),
+                          ),
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              const Text(
+                                "Lokasi",
+                                style: TextStyle(
+                                  fontWeight: FontWeight.bold,
+                                  fontSize: 18,
+                                ),
+                              ),
+                              const SizedBox(height: 12),
+                              Row(
+                                children: [
+                                  const Icon(
+                                    Icons.location_on,
+                                    color: Colors.red,
+                                  ),
+                                  const SizedBox(width: 6),
+                                  Expanded(
+                                    child: Text(
+                                      lokasiText,
+                                      style: const TextStyle(
+                                        color: Colors.black87,
+                                      ),
+                                    ),
+                                  ),
+                                ],
+                              ),
+                              const SizedBox(height: 14),
+                              SizedBox(
+                                width: double.infinity,
+                                height: 50,
+                                child: ElevatedButton.icon(
+                                  style: ElevatedButton.styleFrom(
+                                    backgroundColor: const Color(0xff6C8EF5),
+                                    shape: RoundedRectangleBorder(
+                                      borderRadius: BorderRadius.circular(14),
+                                    ),
+                                  ),
+                                  onPressed:
+                                      (latitude != null && longitude != null)
+                                      ? () {
+                                          double lat = (latitude is num)
+                                              ? latitude.toDouble()
+                                              : double.tryParse(
+                                                      latitude.toString(),
+                                                    ) ??
+                                                    0;
+                                          double lng = (longitude is num)
+                                              ? longitude.toDouble()
+                                              : double.tryParse(
+                                                      longitude.toString(),
+                                                    ) ??
+                                                    0;
+                                          if (lat != 0 && lng != 0) {
+                                            openMap(lat, lng);
+                                          } else {
+                                            ScaffoldMessenger.of(
+                                              context,
+                                            ).showSnackBar(
+                                              const SnackBar(
+                                                content: Text(
+                                                  'Koordinat lokasi tidak valid',
+                                                ),
+                                              ),
+                                            );
+                                          }
+                                        }
+                                      : null,
+                                  icon: const Icon(
+                                    Icons.map,
+                                    color: Colors.white,
+                                  ),
+                                  label: const Text(
+                                    "Buka Google Maps",
+                                    style: TextStyle(color: Colors.white),
+                                  ),
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                        const SizedBox(height: 20),
+                        if (deskripsi.toString().isNotEmpty)
+                          Container(
+                            width: double.infinity,
+                            padding: const EdgeInsets.all(16),
+                            decoration: BoxDecoration(
+                              color: Colors.white,
+                              borderRadius: BorderRadius.circular(20),
+                            ),
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                const Text(
+                                  "Deskripsi",
+                                  style: TextStyle(
+                                    fontWeight: FontWeight.bold,
+                                    fontSize: 18,
+                                  ),
+                                ),
+                                const SizedBox(height: 12),
+                                Text(deskripsi),
+                              ],
+                            ),
+                          ),
+                        const SizedBox(height: 20),
+                        Container(
+                          width: double.infinity,
+                          padding: const EdgeInsets.all(16),
+                          decoration: BoxDecoration(
+                            color: Colors.white,
+                            borderRadius: BorderRadius.circular(20),
+                          ),
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              const Text(
+                                "Diposting",
+                                style: TextStyle(
+                                  fontWeight: FontWeight.bold,
+                                  fontSize: 18,
+                                ),
+                              ),
+                              const SizedBox(height: 12),
+                              Text(
+                                DateFormat(
+                                  'dd MMM yyyy • HH:mm',
+                                ).format(createdAt),
+                              ),
+                            ],
+                          ),
+                        ),
                         const SizedBox(height: 30),
                       ],
                     ),
@@ -215,10 +442,6 @@ class _DetailScreenState extends State<DetailScreen> {
   }
 }
 
-// ─────────────────────────────────────────────────
-// KOMENTAR SHEET — diperbaiki total
-// ─────────────────────────────────────────────────
-
 class KomentarSheet extends StatefulWidget {
   final String ikanId;
 
@@ -232,13 +455,11 @@ class _KomentarSheetState extends State<KomentarSheet> {
   final FirebaseFirestore firestore = FirebaseFirestore.instance;
   final FirebaseAuth auth = FirebaseAuth.instance;
   final TextEditingController _komentarController = TextEditingController();
-  final ScrollController _scrollController = ScrollController();
   bool _isSending = false;
 
   @override
   void dispose() {
     _komentarController.dispose();
-    _scrollController.dispose();
     super.dispose();
   }
 
@@ -332,24 +553,23 @@ class _KomentarSheetState extends State<KomentarSheet> {
 
   @override
   Widget build(BuildContext context) {
-    // DraggableScrollableSheet agar bisa di-drag naik/turun
-    return DraggableScrollableSheet(
-      initialChildSize: 0.6,
-      minChildSize: 0.4,
-      maxChildSize: 1.0,
-      builder: (context, sheetScrollController) {
-        return Container(
-          decoration: const BoxDecoration(
-            color: Colors.white,
-            borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
-          ),
-          // Column utama: header + list (Expanded) + input box (fixed bawah)
-          child: Column(
-            children: [
-              // ── Handle & judul ──────────────────────────
-              const SizedBox(height: 12),
-              Center(
-                child: Container(
+    return Padding(
+      padding: MediaQuery.of(context).viewInsets,
+      child: DraggableScrollableSheet(
+        initialChildSize: 0.6,
+        minChildSize: 0.4,
+        maxChildSize: 0.92,
+        expand: false,
+        builder: (context, scrollController) {
+          return Container(
+            decoration: const BoxDecoration(
+              color: Colors.white,
+              borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
+            ),
+            child: Column(
+              children: [
+                const SizedBox(height: 12),
+                Container(
                   width: 40,
                   height: 4,
                   decoration: BoxDecoration(
@@ -357,128 +577,107 @@ class _KomentarSheetState extends State<KomentarSheet> {
                     borderRadius: BorderRadius.circular(10),
                   ),
                 ),
-              ),
-              const SizedBox(height: 12),
-              const Text(
-                "Komentar",
-                style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
-              ),
-              const Divider(height: 20),
+                const SizedBox(height: 12),
+                const Text(
+                  "Komentar",
+                  style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
+                ),
+                const Divider(height: 20),
+                Expanded(
+                  child: StreamBuilder<QuerySnapshot>(
+                    stream: firestore
+                        .collection('ikan')
+                        .doc(widget.ikanId)
+                        .collection('komentar')
+                        .orderBy('created_at', descending: true)
+                        .snapshots(),
+                    builder: (context, snapshot) {
+                      if (!snapshot.hasData) {
+                        return const Center(child: CircularProgressIndicator());
+                      }
 
-              // ── Daftar komentar — Expanded + scrollable ──
-              Expanded(
-                child: StreamBuilder<QuerySnapshot>(
-                  stream: firestore
-                      .collection('ikan')
-                      .doc(widget.ikanId)
-                      .collection('komentar')
-                      .orderBy('created_at', descending: true)
-                      .snapshots(),
-                  builder: (context, snapshot) {
-                    if (!snapshot.hasData) {
-                      return const Center(child: CircularProgressIndicator());
-                    }
+                      final komentar = snapshot.data!.docs;
 
-                    final komentar = snapshot.data!.docs;
-
-                    if (komentar.isEmpty) {
-                      return const Center(
-                        child: Text(
-                          "Belum ada komentar.\nJadi yang pertama!",
-                          textAlign: TextAlign.center,
-                          style: TextStyle(color: Colors.black45),
-                        ),
-                      );
-                    }
-
-                    return ListView.builder(
-                      // Gunakan sheetScrollController agar drag sheet tetap kerja
-                      controller: sheetScrollController,
-                      padding: EdgeInsets.zero,
-                      itemCount: komentar.length,
-                      itemBuilder: (context, index) {
-                        final k =
-                            komentar[index].data() as Map<String, dynamic>;
-                        final waktu = k['created_at'] != null
-                            ? DateFormat(
-                                'dd MMM • HH:mm',
-                              ).format((k['created_at'] as Timestamp).toDate())
-                            : '';
-
-                        return Container(
-                          width: double.infinity,
-                          padding: const EdgeInsets.symmetric(
-                            horizontal: 16,
-                            vertical: 12,
-                          ),
-                          decoration: BoxDecoration(
-                            border: Border(
-                              bottom: BorderSide(color: Colors.grey.shade100),
-                            ),
-                          ),
-                          child: Row(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              CircleAvatar(
-                                radius: 18,
-                                backgroundColor: Colors.blue.shade100,
-                                child: const Icon(
-                                  Icons.person,
-                                  color: Colors.blue,
-                                  size: 18,
-                                ),
-                              ),
-                              const SizedBox(width: 10),
-                              Expanded(
-                                child: Column(
-                                  crossAxisAlignment: CrossAxisAlignment.start,
-                                  children: [
-                                    Row(
-                                      mainAxisAlignment:
-                                          MainAxisAlignment.spaceBetween,
-                                      children: [
-                                        Text(
-                                          k['username'] ?? 'Pengguna',
-                                          style: const TextStyle(
-                                            fontWeight: FontWeight.bold,
-                                          ),
-                                        ),
-                                        Text(
-                                          waktu,
-                                          style: const TextStyle(
-                                            color: Colors.black38,
-                                            fontSize: 12,
-                                          ),
-                                        ),
-                                      ],
-                                    ),
-                                    const SizedBox(height: 4),
-                                    Text(k['isi'] ?? ''),
-                                  ],
-                                ),
-                              ),
-                            ],
+                      if (komentar.isEmpty) {
+                        return const Center(
+                          child: Text(
+                            "Belum ada komentar.\nJadi yang pertama!",
+                            textAlign: TextAlign.center,
+                            style: TextStyle(color: Colors.black45),
                           ),
                         );
-                      },
-                    );
-                  },
-                ),
-              ),
+                      }
 
-              // ── Input komentar — FIXED di bawah, di atas SafeArea ──
-              const Divider(height: 1),
-              SafeArea(
-                top: false, // hanya bottom safe area yang kita butuhkan
-                child: Padding(
-                  padding: EdgeInsets.only(
-                    left: 16,
-                    right: 16,
-                    top: 10,
-                    // ikut keyboard jika muncul
-                    bottom: MediaQuery.of(context).viewInsets.bottom > 0
-                        ? 10
-                        : 12,
+                      return ListView.builder(
+                        controller: scrollController,
+                        padding: const EdgeInsets.symmetric(horizontal: 16),
+                        itemCount: komentar.length,
+                        itemBuilder: (context, index) {
+                          final k =
+                              komentar[index].data() as Map<String, dynamic>;
+                          final waktu = k['created_at'] != null
+                              ? DateFormat('dd MMM • HH:mm').format(
+                                  (k['created_at'] as Timestamp).toDate(),
+                                )
+                              : '';
+
+                          return Padding(
+                            padding: const EdgeInsets.only(bottom: 16),
+                            child: Row(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                CircleAvatar(
+                                  radius: 18,
+                                  backgroundColor: Colors.blue.shade100,
+                                  child: const Icon(
+                                    Icons.person,
+                                    color: Colors.blue,
+                                    size: 18,
+                                  ),
+                                ),
+                                const SizedBox(width: 10),
+                                Expanded(
+                                  child: Column(
+                                    crossAxisAlignment:
+                                        CrossAxisAlignment.start,
+                                    children: [
+                                      Row(
+                                        mainAxisAlignment:
+                                            MainAxisAlignment.spaceBetween,
+                                        children: [
+                                          Text(
+                                            k['username'] ?? 'Pengguna',
+                                            style: const TextStyle(
+                                              fontWeight: FontWeight.bold,
+                                            ),
+                                          ),
+                                          Text(
+                                            waktu,
+                                            style: const TextStyle(
+                                              color: Colors.black38,
+                                              fontSize: 12,
+                                            ),
+                                          ),
+                                        ],
+                                      ),
+                                      const SizedBox(height: 4),
+                                      Text(k['isi'] ?? ''),
+                                    ],
+                                  ),
+                                ),
+                              ],
+                            ),
+                          );
+                        },
+                      );
+                    },
+                  ),
+                ),
+                const Divider(height: 1),
+                Padding(
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 16,
+                    vertical: 10,
                   ),
                   child: Row(
                     crossAxisAlignment: CrossAxisAlignment.end,
@@ -533,11 +732,11 @@ class _KomentarSheetState extends State<KomentarSheet> {
                     ],
                   ),
                 ),
-              ),
-            ],
-          ),
-        );
-      },
+              ],
+            ),
+          );
+        },
+      ),
     );
   }
 }
