@@ -746,8 +746,8 @@ class _KomentarSheetState extends State<KomentarSheet> {
                                     color: const Color(0xff6C8EF5),
                                     borderRadius: BorderRadius.circular(14),
                                   ),
-                                  child: const Icon(
-                                    Icons.send,
+                                  child: Icon(
+                                    _sudahLogin ? Icons.send : Icons.lock,
                                     color: Colors.white,
                                     size: 20,
                                   ),
