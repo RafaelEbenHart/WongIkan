@@ -7,6 +7,7 @@ import 'package:flutter/material.dart';
 import '../widgets/carousel.dart';
 import 'detail_screen.dart';
 import 'post_screen.dart';
+import 'error/login.dart';
 
 class HomeScreen extends StatefulWidget {
   const HomeScreen({super.key});
@@ -67,14 +68,17 @@ class _HomeScreenState extends State<HomeScreen> {
       floatingActionButton: FloatingActionButton(
         backgroundColor: const Color(0xFF6C8EF5),
         onPressed: () {
-          Navigator.push(
-            context,
-            MaterialPageRoute(
-              builder: (_) => PostScreen(
-                isLogin: FirebaseAuth.instance.currentUser != null,
-              ),
-            ),
-          );
+          if (FirebaseAuth.instance.currentUser == null) {
+            Navigator.push(
+              context,
+              MaterialPageRoute(builder: (_) => const LoginErrorScreen()),
+            );
+          } else {
+            Navigator.push(
+              context,
+              MaterialPageRoute(builder: (_) => PostScreen(isLogin: true)),
+            );
+          }
         },
         child: const Icon(Icons.add),
       ),
@@ -164,12 +168,7 @@ class _HomeScreenState extends State<HomeScreen> {
                 },
               ),
             ),
-            const SizedBox(height: 20),
-            const Text(
-              'Daftar Ikan',
-              style: TextStyle(fontSize: 22, fontWeight: FontWeight.bold),
-            ),
-            const SizedBox(height: 14),
+            const SizedBox(height: 10),
             Expanded(
               child: StreamBuilder<QuerySnapshot>(
                 stream: FirebaseFirestore.instance
@@ -212,6 +211,15 @@ class _HomeScreenState extends State<HomeScreen> {
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
+                        const SizedBox(height: 20),
+                        const Text(
+                          'Daftar Ikan',
+                          style: TextStyle(
+                            fontSize: 22,
+                            fontWeight: FontWeight.bold,
+                          ),
+                        ),
+                        const SizedBox(height: 14),
                         // Section Disarankan
                         const Text(
                           'Disarankan',
