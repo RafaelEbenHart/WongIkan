@@ -1,13 +1,13 @@
 import 'dart:convert';
 
 import 'package:cloud_firestore/cloud_firestore.dart';
-import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 import 'package:share_plus/share_plus.dart';
 import 'package:url_launcher/url_launcher.dart';
 import 'package:wongiwak/screens/sign_in_screen.dart';
 import 'package:wongiwak/widgets/commentTrigger.dart';
+import 'package:firebase_auth/firebase_auth.dart';
 
 class DetailScreen extends StatefulWidget {
   final String ikanId;
@@ -66,6 +66,7 @@ class _DetailScreenState extends State<DetailScreen> {
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: const Color(0xffF5F5F5),
+
       body: StreamBuilder<DocumentSnapshot>(
         stream: firestore.collection('ikan').doc(widget.ikanId).snapshots(),
         builder: (context, snapshot) {
