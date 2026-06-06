@@ -10,6 +10,7 @@ import 'detail/langganan.dart';
 import 'detail/terdekat.dart';
 import 'post_screen.dart';
 import 'error/login.dart';
+import 'profile_screen.dart';
 
 class HomeScreen extends StatefulWidget {
   const HomeScreen({super.key});
@@ -61,13 +62,21 @@ class _HomeScreenState extends State<HomeScreen> {
         actions: [
           Padding(
             padding: const EdgeInsets.only(right: 16),
-            child: CircleAvatar(
-              radius: 19,
-              backgroundColor: const Color(0xFFEEF3FF),
-              child: const Icon(
-                Icons.person_rounded,
-                color: Color(0xFF6C8EF5),
-                size: 20,
+            child: GestureDetector(
+              onTap: () {
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(builder: (_) => const ProfileScreen()),
+                );
+              },
+              child: CircleAvatar(
+                radius: 19,
+                backgroundColor: const Color(0xFFEEF3FF),
+                child: const Icon(
+                  Icons.person_rounded,
+                  color: Color(0xFF6C8EF5),
+                  size: 20,
+                ),
               ),
             ),
           ),

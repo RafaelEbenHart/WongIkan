@@ -3,538 +3,505 @@ import 'dart:convert';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
-import 'package:intl/intl.dart';
-import 'package:wongiwak/screens/detail_screen.dart';
-import 'package:wongiwak/screens/sign_in_screen.dart';
+import 'package:firebase_auth/firebase_auth.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
+import 'dart:convert';
+import 'home_screen.dart';
+import 'post_screen.dart';
+import 'error/login.dart';
+import 'settings_screen.dart';
 
-class ProfileScreen extends StatelessWidget {
+class ProfileScreen extends StatefulWidget {
   const ProfileScreen({super.key});
 
-  String formatRupiah(dynamic harga) {
-    final number = int.tryParse(harga.toString()) ?? 0;
-    final format = NumberFormat.currency(
-      locale: 'id_ID',
-      symbol: 'Rp ',
-      decimalDigits: 0,
-    );
-    return format.format(number);
+  @override
+  State<ProfileScreen> createState() => _ProfileScreenState();
+}
+
+class _ProfileScreenState extends State<ProfileScreen> {
+  late User? currentUser;
+
+  @override
+  void initState() {
+    super.initState();
+    currentUser = FirebaseAuth.instance.currentUser;
   }
 
   @override
   Widget build(BuildContext context) {
-    final user = FirebaseAuth.instance.currentUser;
-
-    if (user == null) {
+    if (currentUser == null) {
       return Scaffold(
-        backgroundColor: const Color(0xffF5F5F5),
-        body: SafeArea(
-          child: Center(
-            child: Column(
-              mainAxisAlignment: MainAxisAlignment.center,
-              children: [
-                Icon(
-                  Icons.person_outline,
-                  size: 80,
-                  color: Colors.grey.shade300,
-                ),
-                const SizedBox(height: 16),
-                const Text(
-                  "Login untuk melihat profil",
-                  style: TextStyle(
-                    fontSize: 16,
-                    fontWeight: FontWeight.w600,
-                    color: Colors.black54,
-                  ),
-                ),
-                const SizedBox(height: 28),
-                ElevatedButton(
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: const Color(0xff6C8EF5),
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(14),
-                    ),
-                    padding: const EdgeInsets.symmetric(
-                      horizontal: 40,
-                      vertical: 14,
-                    ),
-                  ),
-                  onPressed: () {
-                    Navigator.push(
-                      context,
-                      MaterialPageRoute(builder: (_) => const SignInScreen()),
-                    );
-                  },
-                  child: const Text(
-                    "Login Sekarang",
-                    style: TextStyle(
-                      color: Colors.white,
-                      fontWeight: FontWeight.bold,
-                    ),
-                  ),
-                ),
-              ],
-            ),
+        appBar: AppBar(
+          title: const Text('Profile'),
+          leading: GestureDetector(
+            onTap: () => Navigator.pop(context),
+            child: const Icon(Icons.arrow_back),
           ),
+          automaticallyImplyLeading: false,
         ),
+        body: const Center(child: Text('Silakan login terlebih dahulu')),
       );
     }
 
     return Scaffold(
-      backgroundColor: Colors.grey.shade100,
+      backgroundColor: Colors.grey.shade50,
+      appBar: AppBar(
+        backgroundColor: Colors.white,
+        elevation: 0.5,
+        leading: GestureDetector(
+          onTap: () => Navigator.pop(context),
+          child: const Icon(Icons.arrow_back, color: Colors.black),
+        ),
+        automaticallyImplyLeading: false,
+      ),
       body: StreamBuilder<DocumentSnapshot>(
         stream: FirebaseFirestore.instance
             .collection('users')
-            .doc(user.uid)
+            .doc(currentUser!.uid)
             .snapshots(),
-        builder: (context, userSnap) {
-          final userData = userSnap.hasData && userSnap.data!.exists
-              ? userSnap.data!.data() as Map<String, dynamic>
-              : <String, dynamic>{};
+        builder: (context, userSnapshot) {
+          if (userSnapshot.connectionState == ConnectionState.waiting) {
+            return const Center(child: CircularProgressIndicator());
+          }
 
-          final username = userData['username'] ?? 'Pengguna';
-          final alamat = userData['alamat'] ?? '';
+          String displayName = 'Penjual Ikan';
+          String location = 'Indonesia';
+          String occupation = 'Penjual ikan segar';
+          String profileImage = '';
+          int followerCount = 0;
+
+          if (userSnapshot.hasData && userSnapshot.data!.exists) {
+            final userData = userSnapshot.data!.data() as Map<String, dynamic>;
+            displayName = userData['username'] ?? 'Penjual Ikan';
+            location = userData['location'] ?? 'Indonesia';
+            occupation = userData['occupation'] ?? 'Penjual ikan segar';
+            profileImage = userData['profileImage'] ?? '';
+            followerCount = userData['followers'] ?? 0;
+          }
 
           return SingleChildScrollView(
             child: Column(
               children: [
-                Stack(
-                  clipBehavior: Clip.none,
-                  children: [
-                    Container(
-                      height: 220,
-                      decoration: const BoxDecoration(color: Color(0xff6C8EF5)),
+                // Profile Header
+                Container(
+                  padding: const EdgeInsets.all(24),
+                  decoration: BoxDecoration(
+                    gradient: LinearGradient(
+                      begin: Alignment.topLeft,
+                      end: Alignment.bottomRight,
+                      colors: [
+                        const Color(0xFF5E7AC4).withOpacity(0.1),
+                        const Color(0xFF5E7AC4).withOpacity(0.05),
+                      ],
                     ),
-                    Positioned(
-                      top: 50,
-                      right: 16,
-                      child: CircleAvatar(
-                        backgroundColor: Colors.white,
-                        child: IconButton(
-                          onPressed: () {},
-                          icon: const Icon(Icons.settings),
-                        ),
-                      ),
-                    ),
-                    Positioned(
-                      bottom: -45,
-                      left: 24,
-                      child: Container(
-                        padding: const EdgeInsets.all(4),
-                        decoration: const BoxDecoration(
-                          shape: BoxShape.circle,
-                          color: Colors.white,
-                        ),
-                        child: CircleAvatar(
-                          radius: 45,
-                          backgroundColor: Colors.blue.shade100,
-                          child: const Icon(
-                            Icons.person,
-                            size: 48,
-                            color: Colors.blue,
-                          ),
-                        ),
-                      ),
-                    ),
-                  ],
-                ),
-                Align(
-                  alignment: Alignment.centerRight,
-                  child: Padding(
-                    padding: const EdgeInsets.only(right: 24, top: 8),
-                    child: SizedBox(
-                      width: MediaQuery.of(context).size.width * 0.65,
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
+                  ),
+                  child: Column(
+                    children: [
+                      // Profile Picture
+                      Stack(
                         children: [
-                          Text(
-                            username,
-                            style: const TextStyle(
-                              fontSize: 24,
-                              fontWeight: FontWeight.bold,
+                          Container(
+                            decoration: BoxDecoration(
+                              shape: BoxShape.circle,
+                              border: Border.all(
+                                color: const Color(0xFF5E7AC4),
+                                width: 3,
+                              ),
+                            ),
+                            child: CircleAvatar(
+                              radius: 60,
+                              backgroundColor: Colors.grey.shade200,
+                              backgroundImage: profileImage.isNotEmpty
+                                  ? NetworkImage(profileImage)
+                                  : null,
+                              child: profileImage.isEmpty
+                                  ? Icon(
+                                      Icons.person,
+                                      size: 60,
+                                      color: Colors.grey.shade400,
+                                    )
+                                  : null,
                             ),
                           ),
-                          const SizedBox(height: 2),
-                          Text(
-                            "Penjual ikan segar",
-                            style: TextStyle(color: Colors.grey.shade600),
-                          ),
-                          const SizedBox(height: 12),
-                          if (alamat.toString().isNotEmpty)
-                            Row(
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              children: [
-                                const Icon(
-                                  Icons.location_on,
-                                  size: 18,
-                                  color: Colors.grey,
-                                ),
-                                const SizedBox(width: 4),
-                                Expanded(
-                                  child: Text(
-                                    alamat,
-                                    style: TextStyle(
-                                      color: Colors.grey.shade600,
-                                      fontSize: 13,
-                                    ),
+                          Positioned(
+                            bottom: 0,
+                            right: 0,
+                            child: GestureDetector(
+                              onTap: () {
+                                Navigator.push(
+                                  context,
+                                  MaterialPageRoute(
+                                    builder: (_) => const SettingsScreen(),
                                   ),
+                                );
+                              },
+                              child: Container(
+                                padding: const EdgeInsets.all(8),
+                                decoration: const BoxDecoration(
+                                  shape: BoxShape.circle,
+                                  color: Color(0xFF5E7AC4),
                                 ),
-                              ],
+                                child: const Icon(
+                                  Icons.camera_alt,
+                                  color: Colors.white,
+                                  size: 20,
+                                ),
+                              ),
                             ),
+                          ),
                         ],
                       ),
-                    ),
-                  ),
-                ),
-                const SizedBox(height: 50),
-                Padding(
-                  padding: const EdgeInsets.symmetric(horizontal: 24),
-                  child: const Align(
-                    alignment: Alignment.centerLeft,
-                    child: Text(
-                      "Postingan Saya",
-                      style: TextStyle(
-                        fontSize: 18,
-                        fontWeight: FontWeight.bold,
-                      ),
-                    ),
-                  ),
-                ),
-                const SizedBox(height: 12),
-                StreamBuilder<QuerySnapshot>(
-                  stream: FirebaseFirestore.instance
-                      .collection('ikan')
-                      .where('username', isEqualTo: username)
-                      .orderBy('created_at', descending: true)
-                      .snapshots(),
-                  builder: (context, snap) {
-                    if (!snap.hasData || snap.data!.docs.isEmpty) {
-                      return const Padding(
-                        padding: EdgeInsets.symmetric(vertical: 16),
-                        child: Text(
-                          "Belum ada postingan",
-                          style: TextStyle(color: Colors.black45),
+                      const SizedBox(height: 16),
+                      Text(
+                        displayName,
+                        style: const TextStyle(
+                          fontSize: 22,
+                          fontWeight: FontWeight.bold,
                         ),
-                      );
-                    }
-
-                    final produk = snap.data!.docs;
-
-                    return Padding(
-                      padding: const EdgeInsets.symmetric(horizontal: 16),
-                      child: GridView.builder(
-                        shrinkWrap: true,
-                        physics: const NeverScrollableScrollPhysics(),
-                        itemCount: produk.length,
-                        gridDelegate:
-                            const SliverGridDelegateWithFixedCrossAxisCount(
-                              crossAxisCount: 2,
-                              crossAxisSpacing: 12,
-                              mainAxisSpacing: 12,
-                              childAspectRatio: 0.78,
+                      ),
+                      const SizedBox(height: 4),
+                      Text(
+                        occupation,
+                        style: TextStyle(
+                          fontSize: 14,
+                          color: Colors.grey.shade600,
+                        ),
+                      ),
+                      const SizedBox(height: 12),
+                      Row(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: [
+                          const Icon(
+                            Icons.location_on,
+                            size: 16,
+                            color: Colors.grey,
+                          ),
+                          const SizedBox(width: 4),
+                          Text(
+                            location,
+                            style: TextStyle(
+                              color: Colors.grey.shade600,
+                              fontSize: 12,
                             ),
-                        itemBuilder: (context, index) {
-                          final item =
-                              produk[index].data() as Map<String, dynamic>;
-                          final ikanId = produk[index].id;
-                          final nama = item['nama'] ?? '';
-                          final harga = item['harga'] ?? '';
-                          final kategori = item['kategori'] ?? '';
-                          final gambar = item['gambar'] ?? '';
-
-                          return GestureDetector(
-                            onTap: () {
-                              Navigator.push(
-                                context,
-                                MaterialPageRoute(
-                                  builder: (_) => DetailScreen(ikanId: ikanId),
+                          ),
+                        ],
+                      ),
+                      const SizedBox(height: 16),
+                      // Followers Section
+                      Row(
+                        mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+                        children: [
+                          Column(
+                            children: [
+                              Text(
+                                followerCount.toString(),
+                                style: const TextStyle(
+                                  fontSize: 18,
+                                  fontWeight: FontWeight.bold,
+                                  color: Color(0xFF5E7AC4),
                                 ),
-                              );
-                            },
-                            child: Container(
-                              decoration: BoxDecoration(
-                                color: Colors.white,
-                                borderRadius: BorderRadius.circular(16),
                               ),
-                              child: Column(
-                                crossAxisAlignment: CrossAxisAlignment.start,
-                                children: [
-                                  Container(
-                                    height: 120,
-                                    width: double.infinity,
-                                    decoration: BoxDecoration(
-                                      color: Colors.blue.shade50,
-                                      borderRadius: const BorderRadius.only(
-                                        topLeft: Radius.circular(16),
-                                        topRight: Radius.circular(16),
-                                      ),
-                                    ),
-                                    clipBehavior: Clip.hardEdge,
-                                    child: gambar.toString().isNotEmpty
-                                        ? Image.memory(
-                                            base64Decode(gambar),
-                                            fit: BoxFit.cover,
-                                          )
-                                        : Icon(
-                                            Icons.image,
-                                            size: 40,
-                                            color: Colors.blue.shade200,
-                                          ),
-                                  ),
-                                  Padding(
-                                    padding: const EdgeInsets.all(10),
-                                    child: Column(
-                                      crossAxisAlignment:
-                                          CrossAxisAlignment.start,
-                                      children: [
-                                        Text(
-                                          nama,
-                                          style: const TextStyle(
-                                            fontWeight: FontWeight.bold,
-                                            fontSize: 14,
-                                          ),
-                                          maxLines: 1,
-                                          overflow: TextOverflow.ellipsis,
-                                        ),
-                                        const SizedBox(height: 4),
-                                        Text(
-                                          kategori,
-                                          style: const TextStyle(
-                                            color: Color(0xFF6C8EF5),
-                                            fontSize: 12,
-                                            fontWeight: FontWeight.w500,
-                                          ),
-                                        ),
-                                        const SizedBox(height: 4),
-                                        Text(
-                                          "${formatRupiah(harga)} / Kg",
-                                          style: const TextStyle(
-                                            color: Color(0xff6C8EF5),
-                                            fontWeight: FontWeight.bold,
-                                            fontSize: 12,
-                                          ),
-                                        ),
-                                      ],
-                                    ),
-                                  ),
-                                ],
+                              const SizedBox(height: 4),
+                              Text(
+                                'Followers',
+                                style: TextStyle(
+                                  fontSize: 12,
+                                  color: Colors.grey.shade600,
+                                ),
                               ),
-                            ),
-                          );
-                        },
+                            ],
+                          ),
+                          Column(
+                            children: [
+                              StreamBuilder<QuerySnapshot>(
+                                stream: FirebaseFirestore.instance
+                                    .collection('ikan')
+                                    .where(
+                                      'userId',
+                                      isEqualTo: currentUser!.uid,
+                                    )
+                                    .snapshots(),
+                                builder: (context, snapshot) {
+                                  int count = snapshot.data?.docs.length ?? 0;
+                                  return Text(
+                                    count.toString(),
+                                    style: const TextStyle(
+                                      fontSize: 18,
+                                      fontWeight: FontWeight.bold,
+                                      color: Color(0xFF5E7AC4),
+                                    ),
+                                  );
+                                },
+                              ),
+                              const SizedBox(height: 4),
+                              Text(
+                                'Postingan',
+                                style: TextStyle(
+                                  fontSize: 12,
+                                  color: Colors.grey.shade600,
+                                ),
+                              ),
+                            ],
+                          ),
+                          Column(
+                            children: [
+                              StreamBuilder<QuerySnapshot>(
+                                stream: FirebaseFirestore.instance
+                                    .collection('users')
+                                    .doc(currentUser!.uid)
+                                    .collection('langganan')
+                                    .snapshots(),
+                                builder: (context, snapshot) {
+                                  int count = snapshot.data?.docs.length ?? 0;
+                                  return Text(
+                                    count.toString(),
+                                    style: const TextStyle(
+                                      fontSize: 18,
+                                      fontWeight: FontWeight.bold,
+                                      color: Color(0xFF5E7AC4),
+                                    ),
+                                  );
+                                },
+                              ),
+                              const SizedBox(height: 4),
+                              Text(
+                                'Following',
+                                style: TextStyle(
+                                  fontSize: 12,
+                                  color: Colors.grey.shade600,
+                                ),
+                              ),
+                            ],
+                          ),
+                        ],
                       ),
-                    );
-                  },
-                ),
-                const SizedBox(height: 24),
-                Padding(
-                  padding: const EdgeInsets.symmetric(horizontal: 24),
-                  child: const Align(
-                    alignment: Alignment.centerLeft,
-                    child: Text(
-                      "Favorite Saya",
-                      style: TextStyle(
-                        fontSize: 18,
-                        fontWeight: FontWeight.bold,
-                      ),
-                    ),
-                  ),
-                ),
-                const SizedBox(height: 12),
-                StreamBuilder<QuerySnapshot>(
-                  stream: FirebaseFirestore.instance
-                      .collection('users')
-                      .doc(user.uid)
-                      .collection('favorites')
-                      .orderBy('created_at', descending: true)
-                      .snapshots(),
-                  builder: (context, snap) {
-                    if (!snap.hasData || snap.data!.docs.isEmpty) {
-                      return const Padding(
-                        padding: EdgeInsets.symmetric(vertical: 16),
-                        child: Text(
-                          "Belum ada favorite",
-                          style: TextStyle(color: Colors.black45),
-                        ),
-                      );
-                    }
-
-                    final favorites = snap.data!.docs;
-
-                    return ListView.builder(
-                      shrinkWrap: true,
-                      physics: const NeverScrollableScrollPhysics(),
-                      padding: const EdgeInsets.symmetric(horizontal: 16),
-                      itemCount: favorites.length,
-                      itemBuilder: (context, index) {
-                        final item =
-                            favorites[index].data() as Map<String, dynamic>;
-                        final ikanId = item['ikanId'] ?? '';
-                        final nama = item['nama'] ?? '';
-                        final harga = item['harga'] ?? '';
-                        final kategori = item['kategori'] ?? '';
-                        final gambar = item['gambar'] ?? '';
-                        final lokasi = item['lokasi'] ?? '';
-                        final usernameItem = item['username'] ?? '';
-
-                        return GestureDetector(
-                          onTap: () {
+                      const SizedBox(height: 16),
+                      SizedBox(
+                        width: double.infinity,
+                        child: ElevatedButton(
+                          onPressed: () {
                             Navigator.push(
                               context,
                               MaterialPageRoute(
-                                builder: (_) => DetailScreen(ikanId: ikanId),
+                                builder: (_) => const SettingsScreen(),
                               ),
                             );
                           },
-                          child: Container(
-                            margin: const EdgeInsets.only(bottom: 12),
-                            decoration: BoxDecoration(
-                              color: Colors.white,
-                              borderRadius: BorderRadius.circular(16),
+                          style: ElevatedButton.styleFrom(
+                            backgroundColor: const Color(0xFF5E7AC4),
+                            padding: const EdgeInsets.symmetric(vertical: 12),
+                            shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(10),
                             ),
-                            child: Row(
+                          ),
+                          child: const Text(
+                            'Pengaturan Profil',
+                            style: TextStyle(
+                              color: Colors.white,
+                              fontWeight: FontWeight.bold,
+                            ),
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+                const SizedBox(height: 24),
+                Padding(
+                  padding: const EdgeInsets.symmetric(horizontal: 16),
+                  child: Align(
+                    alignment: Alignment.centerLeft,
+                    child: Text(
+                      'Postingan Saya',
+                      style: Theme.of(context).textTheme.titleLarge?.copyWith(
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
+                  ),
+                ),
+                const SizedBox(height: 12),
+                Padding(
+                  padding: const EdgeInsets.symmetric(horizontal: 16),
+                  child: StreamBuilder<QuerySnapshot>(
+                    stream: FirebaseFirestore.instance
+                        .collection('ikan')
+                        .where('userId', isEqualTo: currentUser!.uid)
+                        .snapshots(),
+                    builder: (context, snapshot) {
+                      if (snapshot.connectionState == ConnectionState.waiting) {
+                        return const Center(
+                          child: Padding(
+                            padding: EdgeInsets.all(40),
+                            child: CircularProgressIndicator(),
+                          ),
+                        );
+                      }
+
+                      if (snapshot.hasError) {
+                        return Center(child: Text('Error: ${snapshot.error}'));
+                      }
+
+                      final posts = snapshot.data?.docs ?? [];
+                      // Sort by created_at descending (client-side)
+                      posts.sort((a, b) {
+                        final aTime =
+                            (a['created_at'] as Timestamp?)?.toDate() ??
+                            DateTime(1970);
+                        final bTime =
+                            (b['created_at'] as Timestamp?)?.toDate() ??
+                            DateTime(1970);
+                        return bTime.compareTo(aTime);
+                      });
+
+                      if (posts.isEmpty) {
+                        return Center(
+                          child: Padding(
+                            padding: const EdgeInsets.all(40),
+                            child: Column(
                               children: [
-                                Container(
-                                  width: 100,
-                                  height: 100,
-                                  decoration: BoxDecoration(
-                                    color: Colors.blue.shade50,
-                                    borderRadius: const BorderRadius.only(
-                                      topLeft: Radius.circular(16),
-                                      bottomLeft: Radius.circular(16),
-                                    ),
-                                  ),
-                                  clipBehavior: Clip.hardEdge,
-                                  child: gambar.toString().isNotEmpty
-                                      ? Image.memory(
-                                          base64Decode(gambar),
-                                          fit: BoxFit.cover,
-                                        )
-                                      : Icon(
-                                          Icons.image,
-                                          size: 36,
-                                          color: Colors.blue.shade200,
-                                        ),
+                                Icon(
+                                  Icons.image_not_supported,
+                                  size: 48,
+                                  color: Colors.grey.shade300,
                                 ),
-                                const SizedBox(width: 12),
-                                Expanded(
-                                  child: Padding(
-                                    padding: const EdgeInsets.symmetric(
-                                      vertical: 12,
-                                      horizontal: 4,
-                                    ),
-                                    child: Column(
-                                      crossAxisAlignment:
-                                          CrossAxisAlignment.start,
-                                      children: [
-                                        Text(
-                                          nama,
-                                          style: const TextStyle(
-                                            fontWeight: FontWeight.bold,
-                                            fontSize: 15,
-                                          ),
-                                          maxLines: 1,
-                                          overflow: TextOverflow.ellipsis,
-                                        ),
-                                        const SizedBox(height: 3),
-                                        Text(
-                                          kategori,
-                                          style: const TextStyle(
-                                            color: Color(0xFF6C8EF5),
-                                            fontSize: 12,
-                                            fontWeight: FontWeight.w500,
-                                          ),
-                                        ),
-                                        const SizedBox(height: 4),
-                                        Text(
-                                          "${formatRupiah(harga)} / Kg",
-                                          style: const TextStyle(
-                                            color: Color(0xff6C8EF5),
-                                            fontWeight: FontWeight.bold,
-                                            fontSize: 13,
-                                          ),
-                                        ),
-                                        const SizedBox(height: 4),
-                                        Row(
-                                          children: [
-                                            const Icon(
-                                              Icons.person_outline,
-                                              size: 12,
-                                              color: Colors.black45,
-                                            ),
-                                            const SizedBox(width: 3),
-                                            Expanded(
-                                              child: Text(
-                                                usernameItem,
-                                                style: const TextStyle(
-                                                  fontSize: 11,
-                                                  color: Colors.black45,
-                                                ),
-                                                maxLines: 1,
-                                                overflow: TextOverflow.ellipsis,
-                                              ),
-                                            ),
-                                          ],
-                                        ),
-                                        Row(
-                                          children: [
-                                            const Icon(
-                                              Icons.location_on,
-                                              size: 12,
-                                              color: Colors.red,
-                                            ),
-                                            const SizedBox(width: 3),
-                                            Expanded(
-                                              child: Text(
-                                                lokasi,
-                                                style: const TextStyle(
-                                                  fontSize: 11,
-                                                  color: Colors.black45,
-                                                ),
-                                                maxLines: 1,
-                                                overflow: TextOverflow.ellipsis,
-                                              ),
-                                            ),
-                                          ],
-                                        ),
-                                      ],
-                                    ),
-                                  ),
-                                ),
-                                Padding(
-                                  padding: const EdgeInsets.only(right: 12),
-                                  child: GestureDetector(
-                                    onTap: () async {
-                                      await FirebaseFirestore.instance
-                                          .collection('users')
-                                          .doc(user.uid)
-                                          .collection('favorites')
-                                          .doc(ikanId)
-                                          .delete();
-                                    },
-                                    child: Container(
-                                      width: 34,
-                                      height: 34,
-                                      decoration: BoxDecoration(
-                                        color: Colors.red.shade50,
-                                        borderRadius: BorderRadius.circular(10),
-                                      ),
-                                      child: const Icon(
-                                        Icons.favorite,
-                                        color: Colors.red,
-                                        size: 18,
-                                      ),
-                                    ),
+                                const SizedBox(height: 16),
+                                Text(
+                                  'Belum ada postingan',
+                                  style: TextStyle(
+                                    color: Colors.grey.shade600,
+                                    fontSize: 14,
                                   ),
                                 ),
                               ],
                             ),
                           ),
                         );
-                      },
-                    );
-                  },
+                      }
+
+                      return GridView.builder(
+                        shrinkWrap: true,
+                        physics: const NeverScrollableScrollPhysics(),
+                        itemCount: posts.length,
+                        gridDelegate:
+                            const SliverGridDelegateWithFixedCrossAxisCount(
+                              crossAxisCount: 2,
+                              crossAxisSpacing: 12,
+                              mainAxisSpacing: 12,
+                              childAspectRatio: 0.72,
+                            ),
+                        itemBuilder: (context, index) {
+                          final postData =
+                              posts[index].data() as Map<String, dynamic>;
+                          final name = postData['nama'] ?? 'Tanpa Nama';
+                          final price = postData['harga'] ?? 'Hubungi';
+                          final imageUrl = postData['gambar'] ?? '';
+                          final category = postData['kategori'] ?? 'Ikan';
+
+                          return Card(
+                            elevation: 2,
+                            shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(12),
+                            ),
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Expanded(
+                                  child: ClipRRect(
+                                    borderRadius: const BorderRadius.vertical(
+                                      top: Radius.circular(12),
+                                    ),
+                                    child: Container(
+                                      width: double.infinity,
+                                      color: Colors.grey.shade200,
+                                      child: imageUrl.isNotEmpty
+                                          ? (imageUrl.startsWith('http')
+                                                ? Image.network(
+                                                    imageUrl,
+                                                    fit: BoxFit.cover,
+                                                    errorBuilder:
+                                                        (
+                                                          context,
+                                                          error,
+                                                          stackTrace,
+                                                        ) {
+                                                          return Icon(
+                                                            Icons
+                                                                .image_not_supported,
+                                                            color: Colors
+                                                                .grey
+                                                                .shade400,
+                                                          );
+                                                        },
+                                                  )
+                                                : Image.memory(
+                                                    base64Decode(imageUrl),
+                                                    fit: BoxFit.cover,
+                                                    errorBuilder:
+                                                        (
+                                                          context,
+                                                          error,
+                                                          stackTrace,
+                                                        ) {
+                                                          return Icon(
+                                                            Icons
+                                                                .image_not_supported,
+                                                            color: Colors
+                                                                .grey
+                                                                .shade400,
+                                                          );
+                                                        },
+                                                  ))
+                                          : Icon(
+                                              Icons.image_not_supported,
+                                              color: Colors.grey.shade400,
+                                            ),
+                                    ),
+                                  ),
+                                ),
+                                Padding(
+                                  padding: const EdgeInsets.all(10),
+                                  child: Column(
+                                    crossAxisAlignment:
+                                        CrossAxisAlignment.start,
+                                    children: [
+                                      Text(
+                                        name,
+                                        maxLines: 1,
+                                        overflow: TextOverflow.ellipsis,
+                                        style: const TextStyle(
+                                          fontWeight: FontWeight.bold,
+                                          fontSize: 13,
+                                        ),
+                                      ),
+                                      const SizedBox(height: 4),
+                                      Text(
+                                        category,
+                                        style: TextStyle(
+                                          color: Colors.grey.shade600,
+                                          fontSize: 11,
+                                        ),
+                                      ),
+                                      const SizedBox(height: 6),
+                                      Text(
+                                        price,
+                                        style: const TextStyle(
+                                          color: Color(0xFF5E7AC4),
+                                          fontSize: 13,
+                                          fontWeight: FontWeight.bold,
+                                        ),
+                                      ),
+                                    ],
+                                  ),
+                                ),
+                              ],
+                            ),
+                          );
+                        },
+                      );
+                    },
+                  ),
                 ),
-                const SizedBox(height: 30),
+                const SizedBox(height: 24),
               ],
             ),
           );
