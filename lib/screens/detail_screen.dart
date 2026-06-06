@@ -22,10 +22,106 @@ class DetailScreen extends StatefulWidget {
 class _DetailScreenState extends State<DetailScreen> {
   final FirebaseFirestore firestore = FirebaseFirestore.instance;
   final FirebaseAuth auth = FirebaseAuth.instance;
+  bool _isFavorite = false;
+  bool _loadingFavorite = false;
 
   @override
   void initState() {
     super.initState();
+    _cekFavorite();
+  }
+
+  Future<void> _cekFavorite() async {
+    final user = auth.currentUser;
+    if (user == null) return;
+    final doc = await firestore
+        .collection('users')
+        .doc(user.uid)
+        .collection('favorites')
+        .doc(widget.ikanId)
+        .get();
+    if (mounted) setState(() => _isFavorite = doc.exists);
+  }
+
+  Future<void> _toggleFavorite(Map<String, dynamic> data) async {
+    final user = auth.currentUser;
+    if (user == null) {
+      _tampilDialogLogin();
+      return;
+    }
+
+    setState(() => _loadingFavorite = true);
+
+    final ref = firestore
+        .collection('users')
+        .doc(user.uid)
+        .collection('favorites')
+        .doc(widget.ikanId);
+
+    try {
+      if (_isFavorite) {
+        await ref.delete();
+        setState(() => _isFavorite = false);
+      } else {
+        await ref.set({
+          'ikanId': widget.ikanId,
+          'nama': data['nama'] ?? '',
+          'harga': data['harga'] ?? '',
+          'kategori': data['kategori'] ?? '',
+          'gambar': data['gambar'] ?? '',
+          'lokasi': data['lokasi'] ?? '',
+          'username': data['username'] ?? '',
+          'created_at': FieldValue.serverTimestamp(),
+        });
+        setState(() => _isFavorite = true);
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(SnackBar(content: Text('Gagal: $e')));
+      }
+    } finally {
+      if (mounted) setState(() => _loadingFavorite = false);
+    }
+  }
+
+  void _tampilDialogLogin() {
+    showDialog(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+        title: const Text(
+          "Perlu Login",
+          style: TextStyle(fontWeight: FontWeight.bold),
+        ),
+        content: const Text(
+          "Kamu harus login atau membuat akun terlebih dahulu untuk menyimpan favorite.",
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(ctx),
+            child: const Text("Batal", style: TextStyle(color: Colors.black54)),
+          ),
+          ElevatedButton(
+            style: ElevatedButton.styleFrom(
+              backgroundColor: const Color(0xff6C8EF5),
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(10),
+              ),
+            ),
+            onPressed: () {
+              Navigator.pop(ctx);
+              Navigator.push(
+                context,
+                MaterialPageRoute(builder: (_) => const SignInScreen()),
+              );
+            },
+            child: const Text("Login", style: TextStyle(color: Colors.white)),
+          ),
+        ],
+      ),
+    );
   }
 
   String formatRupiah(dynamic harga) {
@@ -109,6 +205,7 @@ class _DetailScreenState extends State<DetailScreen> {
               : (latitude != null && longitude != null
                     ? '${(latitude is num ? latitude.toDouble() : double.tryParse(latitude.toString()) ?? 0).toStringAsFixed(5)}, ${(longitude is num ? longitude.toDouble() : double.tryParse(longitude.toString()) ?? 0).toStringAsFixed(5)}'
                     : 'Lokasi tidak tersedia');
+
           final createdAt = data['created_at'] != null
               ? (data['created_at'] as Timestamp).toDate()
               : DateTime.now();
@@ -249,6 +346,54 @@ class _DetailScreenState extends State<DetailScreen> {
                                   );
                                 },
                               ),
+                            ),
+                          ),
+                          const SizedBox(width: 10),
+                          GestureDetector(
+                            onTap: () => _toggleFavorite(data),
+                            child: Container(
+                              padding: const EdgeInsets.symmetric(
+                                horizontal: 16,
+                                vertical: 10,
+                              ),
+                              decoration: BoxDecoration(
+                                color: _isFavorite
+                                    ? Colors.red.shade50
+                                    : Colors.white,
+                                borderRadius: BorderRadius.circular(12),
+                              ),
+                              child: _loadingFavorite
+                                  ? const SizedBox(
+                                      width: 20,
+                                      height: 20,
+                                      child: CircularProgressIndicator(
+                                        strokeWidth: 2,
+                                        color: Colors.red,
+                                      ),
+                                    )
+                                  : Row(
+                                      mainAxisSize: MainAxisSize.min,
+                                      children: [
+                                        Icon(
+                                          _isFavorite
+                                              ? Icons.favorite
+                                              : Icons.favorite_border,
+                                          size: 20,
+                                          color: _isFavorite
+                                              ? Colors.red
+                                              : Colors.black87,
+                                        ),
+                                        const SizedBox(width: 6),
+                                        Text(
+                                          _isFavorite ? "Disimpan" : "Favorite",
+                                          style: TextStyle(
+                                            color: _isFavorite
+                                                ? Colors.red
+                                                : Colors.black87,
+                                          ),
+                                        ),
+                                      ],
+                                    ),
                             ),
                           ),
                         ],
@@ -539,6 +684,7 @@ class KomentarSheet extends StatefulWidget {
   final String ikanId;
 
   const KomentarSheet({super.key, required this.ikanId});
+
   @override
   State<KomentarSheet> createState() => _KomentarSheetState();
 }
@@ -547,13 +693,11 @@ class _KomentarSheetState extends State<KomentarSheet> {
   final FirebaseFirestore firestore = FirebaseFirestore.instance;
   final FirebaseAuth auth = FirebaseAuth.instance;
   final TextEditingController _komentarController = TextEditingController();
-  final ScrollController _scrollController = ScrollController();
   bool _isSending = false;
 
   @override
   void dispose() {
     _komentarController.dispose();
-    _scrollController.dispose();
     super.dispose();
   }
 
@@ -617,7 +761,6 @@ class _KomentarSheetState extends State<KomentarSheet> {
       _tampilDialogLogin();
       return;
     }
-
     setState(() => _isSending = true);
     try {
       final username = await _getUsername();
@@ -692,7 +835,6 @@ class _KomentarSheetState extends State<KomentarSheet> {
                             child: CircularProgressIndicator(),
                           );
                         }
-
                         final komentar = snapshot.data!.docs;
                         if (komentar.isEmpty) {
                           return const Center(
@@ -703,7 +845,6 @@ class _KomentarSheetState extends State<KomentarSheet> {
                             ),
                           );
                         }
-
                         return ListView.builder(
                           controller: scrollController,
                           padding: const EdgeInsets.symmetric(horizontal: 16),
@@ -716,7 +857,6 @@ class _KomentarSheetState extends State<KomentarSheet> {
                                     (k['created_at'] as Timestamp).toDate(),
                                   )
                                 : '';
-
                             return Padding(
                               padding: const EdgeInsets.only(bottom: 16),
                               child: Row(
