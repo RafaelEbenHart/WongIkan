@@ -19,6 +19,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
   late TextEditingController locationController;
   late TextEditingController occupationController;
   XFile? selectedImage;
+  Uint8List? selectedImageBytes;
   bool isUploading = false;
 
   @override
@@ -60,11 +61,16 @@ class _SettingsScreenState extends State<SettingsScreen> {
 
   Future<void> _pickImage() async {
     final ImagePicker picker = ImagePicker();
-    final XFile? image = await picker.pickImage(source: ImageSource.gallery);
+    final XFile? image = await picker.pickImage(
+      source: ImageSource.gallery,
+      imageQuality: 80,
+    );
 
     if (image != null) {
+      final bytes = await image.readAsBytes();
       setState(() {
         selectedImage = image;
+        selectedImageBytes = bytes;
       });
     }
   }
@@ -136,7 +142,6 @@ class _SettingsScreenState extends State<SettingsScreen> {
         } catch (imageError) {
           print('Image upload error: $imageError');
           _showSnackBar('Error gambar: $imageError');
-          // Continue saving profile data even if image upload fails
         }
       }
 
@@ -151,6 +156,10 @@ class _SettingsScreenState extends State<SettingsScreen> {
         _showSnackBar('✓ Profil berhasil diperbarui');
         Future.delayed(const Duration(milliseconds: 800), () {
           if (mounted) {
+            setState(() {
+              selectedImage = null;
+              selectedImageBytes = null;
+            });
             Navigator.pop(context);
           }
         });
@@ -211,28 +220,19 @@ class _SettingsScreenState extends State<SettingsScreen> {
                             ),
                           ),
                           child: selectedImage != null
-                              ? FutureBuilder<Uint8List>(
-                                  future: selectedImage!.readAsBytes(),
-                                  builder: (context, snapshot) {
-                                    if (snapshot.hasData) {
-                                      return CircleAvatar(
-                                        radius: 60,
-                                        backgroundColor: Colors.grey.shade200,
-                                        backgroundImage: MemoryImage(
-                                          snapshot.data!,
-                                        ),
-                                      );
-                                    }
-                                    return CircleAvatar(
-                                      radius: 60,
-                                      backgroundColor: Colors.grey.shade200,
-                                      child: Icon(
-                                        Icons.person,
-                                        size: 60,
-                                        color: Colors.grey.shade400,
-                                      ),
-                                    );
-                                  },
+                              ? CircleAvatar(
+                                  radius: 60,
+                                  backgroundColor: Colors.grey.shade200,
+                                  backgroundImage: selectedImageBytes != null
+                                      ? MemoryImage(selectedImageBytes!)
+                                      : null,
+                                  child: selectedImageBytes == null
+                                      ? Icon(
+                                          Icons.person,
+                                          size: 60,
+                                          color: Colors.grey.shade400,
+                                        )
+                                      : null,
                                 )
                               : CircleAvatar(
                                   radius: 60,
@@ -339,7 +339,13 @@ class _SettingsScreenState extends State<SettingsScreen> {
               SizedBox(
                 width: double.infinity,
                 child: OutlinedButton(
-                  onPressed: () => Navigator.pop(context),
+                  onPressed: () {
+                    setState(() {
+                      selectedImage = null;
+                      selectedImageBytes = null;
+                    });
+                    Navigator.pop(context);
+                  },
                   style: OutlinedButton.styleFrom(
                     padding: const EdgeInsets.symmetric(vertical: 14),
                     side: const BorderSide(color: Color(0xFF5E7AC4)),

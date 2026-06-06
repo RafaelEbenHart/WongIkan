@@ -194,6 +194,7 @@ class _DetailScreenState extends State<DetailScreen> {
           final kategori = data['kategori'] ?? '';
           final username = data['username'] ?? '';
           final alamat = data['alamat'] ?? '';
+          final userId = data['userId'] ?? '';
           final gambar = data['gambar'] ?? '';
           final deskripsi = data['deskripsi'] ?? '';
 
@@ -439,6 +440,7 @@ class _DetailScreenState extends State<DetailScreen> {
                                   builder: (_) => TokoScreen(
                                     username: username,
                                     alamat: alamat,
+                                    userId: userId,
                                   ),
                                 ),
                               );

@@ -10,8 +10,14 @@ import 'package:wongiwak/screens/sign_in_screen.dart';
 class TokoScreen extends StatefulWidget {
   final String username;
   final String alamat;
+  final String userId;
 
-  const TokoScreen({super.key, required this.username, required this.alamat});
+  const TokoScreen({
+    super.key,
+    required this.username,
+    required this.alamat,
+    required this.userId,
+  });
 
   @override
   State<TokoScreen> createState() => _TokoScreenState();
@@ -99,14 +105,59 @@ class _TokoScreenState extends State<TokoScreen> {
 
     try {
       if (_isSubscribed) {
+        // Unfollow: hapus dari following user & kurangi followers seller
         await ref.delete();
+
+        // Kurangi followers seller
+        final sellerRef = firestore
+            .collection('users')
+            .where('username', isEqualTo: widget.username);
+        final sellerDocs = await sellerRef.get();
+        if (sellerDocs.docs.isNotEmpty) {
+          final sellerId = sellerDocs.docs.first.id;
+          await firestore.collection('users').doc(sellerId).update({
+            'followers': FieldValue.increment(-1),
+          });
+          // Hapus dari followers collection seller
+          await firestore
+              .collection('users')
+              .doc(sellerId)
+              .collection('followers')
+              .doc(user.uid)
+              .delete();
+        }
+
         setState(() => _isSubscribed = false);
       } else {
+        // Follow: tambah ke following user & tambah followers seller
         await ref.set({
           'username': widget.username,
           'alamat': widget.alamat,
           'created_at': FieldValue.serverTimestamp(),
         });
+
+        // Tambah followers seller
+        final sellerRef = firestore
+            .collection('users')
+            .where('username', isEqualTo: widget.username);
+        final sellerDocs = await sellerRef.get();
+        if (sellerDocs.docs.isNotEmpty) {
+          final sellerId = sellerDocs.docs.first.id;
+          await firestore.collection('users').doc(sellerId).update({
+            'followers': FieldValue.increment(1),
+          });
+          // Tambah ke followers collection seller
+          await firestore
+              .collection('users')
+              .doc(sellerId)
+              .collection('followers')
+              .doc(user.uid)
+              .set({
+                'uid': user.uid,
+                'created_at': FieldValue.serverTimestamp(),
+              });
+        }
+
         setState(() => _isSubscribed = true);
       }
     } catch (e) {
@@ -300,7 +351,7 @@ class _TokoScreenState extends State<TokoScreen> {
               child: StreamBuilder<QuerySnapshot>(
                 stream: FirebaseFirestore.instance
                     .collection('ikan')
-                    .where('username', isEqualTo: widget.username)
+                    .where('userId', isEqualTo: widget.userId)
                     .snapshots(),
                 builder: (context, snapshot) {
                   if (snapshot.connectionState == ConnectionState.waiting) {

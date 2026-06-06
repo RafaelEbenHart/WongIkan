@@ -249,7 +249,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
                                 stream: FirebaseFirestore.instance
                                     .collection('users')
                                     .doc(currentUser!.uid)
-                                    .collection('following')
+                                    .collection('langganan')
                                     .snapshots(),
                                 builder: (context, snapshot) {
                                   int count = snapshot.data?.docs.length ?? 0;
