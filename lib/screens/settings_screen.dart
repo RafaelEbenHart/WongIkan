@@ -63,11 +63,20 @@ class _SettingsScreenState extends State<SettingsScreen> {
     final ImagePicker picker = ImagePicker();
     final XFile? image = await picker.pickImage(
       source: ImageSource.gallery,
-      imageQuality: 80,
+      imageQuality: 40,
+      maxWidth: 600,
+      maxHeight: 600,
     );
 
     if (image != null) {
       final bytes = await image.readAsBytes();
+      print('Selected image size: ${bytes.length} bytes');
+      if (bytes.length > 800000) {
+        _showSnackBar(
+          'Ukuran gambar terlalu besar. Pilih gambar maksimal 1MB.',
+        );
+        return;
+      }
       setState(() {
         selectedImage = image;
         selectedImageBytes = bytes;
@@ -127,20 +136,14 @@ class _SettingsScreenState extends State<SettingsScreen> {
         'occupation': occupationController.text,
       };
 
-      if (selectedImage != null) {
+      if (selectedImageBytes != null) {
         try {
-          final imageUrl = await _uploadProfileImage();
-          if (imageUrl != null) {
-            updateData['profileImage'] = imageUrl;
-            print('Image URL added to update data');
-          } else {
-            print('Image URL is null');
-            _showSnackBar(
-              'Peringatan: Gambar tidak terupload, tapi profil disimpan',
-            );
-          }
+          updateData['profileImageBytes'] = Blob(selectedImageBytes!);
+          print(
+            'Image bytes added to updateData: ${selectedImageBytes!.length} bytes',
+          );
         } catch (imageError) {
-          print('Image upload error: $imageError');
+          print('Image bytes error: $imageError');
           _showSnackBar('Error gambar: $imageError');
         }
       }
