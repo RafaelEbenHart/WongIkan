@@ -20,7 +20,7 @@ class PostScreen extends StatefulWidget {
   State<PostScreen> createState() => _PostScreenState();
 }
 
-class _PostScreenState extends State<PostScreen> {
+class _PostScreenState extends State<PostScreen> with WidgetsBindingObserver {
   final TextEditingController namaController = TextEditingController();
   final TextEditingController hargaController = TextEditingController();
   final TextEditingController deskripsiController = TextEditingController();
@@ -33,7 +33,7 @@ class _PostScreenState extends State<PostScreen> {
   bool isPosting = false;
 
   String username = '';
-  String alamat = '';
+  String location = '';
 
   double? latitude;
   double? longitude;
@@ -55,6 +55,7 @@ class _PostScreenState extends State<PostScreen> {
   @override
   void initState() {
     super.initState();
+    WidgetsBinding.instance.addObserver(this);
 
     if (widget.isLogin) {
       getUserData();
@@ -63,11 +64,20 @@ class _PostScreenState extends State<PostScreen> {
 
   @override
   void dispose() {
+    WidgetsBinding.instance.removeObserver(this);
     namaController.dispose();
     hargaController.dispose();
     deskripsiController.dispose();
     lokasiController.dispose();
     super.dispose();
+  }
+
+  @override
+  void didChangeAppLifecycleState(AppLifecycleState state) {
+    if (state == AppLifecycleState.resumed && widget.isLogin) {
+      // Refresh user data when screen comes back to focus
+      getUserData();
+    }
   }
 
   Future<void> getUserData() async {
@@ -82,7 +92,7 @@ class _PostScreenState extends State<PostScreen> {
 
     setState(() {
       username = data?['username'] ?? 'User';
-      alamat = data?['alamat'] ?? 'Alamat belum ada';
+      location = data?['location'] ?? 'Alamat belum ada';
       isLoading = false;
     });
   }
@@ -210,9 +220,8 @@ class _PostScreenState extends State<PostScreen> {
         'kategori': selectedKategori,
         'gambar': base64Image,
         'username': username,
-        'alamat': alamat,
+        'userId': FirebaseAuth.instance.currentUser!.uid,
         'created_at': Timestamp.now(),
-        'user_id': FirebaseAuth.instance.currentUser!.uid,
         'latitude': latitude,
         'longitude': longitude,
       });
@@ -328,7 +337,7 @@ class _PostScreenState extends State<PostScreen> {
                               ),
                               const SizedBox(height: 6),
                               Text(
-                                alamat,
+                                location,
                                 style: const TextStyle(
                                   color: Colors.black54,
                                   fontSize: 14,
