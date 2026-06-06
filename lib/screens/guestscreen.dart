@@ -36,6 +36,45 @@ class _GuestScreenState extends State<GuestScreen> {
     super.dispose();
   }
 
+  // Fungsi untuk menampilkan pop-up wajib login
+  void _tampilDialogLogin() {
+    showDialog(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+        title: const Text(
+          "Perlu Login",
+          style: TextStyle(fontWeight: FontWeight.bold),
+        ),
+        content: const Text(
+          "Kamu harus login atau membuat akun terlebih dahulu untuk menggunakan fitur ini.",
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(ctx),
+            child: const Text("Batal", style: TextStyle(color: Colors.black54)),
+          ),
+          ElevatedButton(
+            style: ElevatedButton.styleFrom(
+              backgroundColor: const Color(0xff6C8EF5),
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(10),
+              ),
+            ),
+            onPressed: () {
+              Navigator.pop(ctx);
+              Navigator.push(
+                context,
+                MaterialPageRoute(builder: (_) => const LoginErrorScreen()),
+              );
+            },
+            child: const Text("Login", style: TextStyle(color: Colors.white)),
+          ),
+        ],
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -54,14 +93,10 @@ class _GuestScreenState extends State<GuestScreen> {
           ),
         ),
         actions: [
-          // Tombol login di AppBar
           Padding(
             padding: const EdgeInsets.only(right: 16),
             child: GestureDetector(
-              onTap: () => Navigator.push(
-                context,
-                MaterialPageRoute(builder: (_) => const LoginErrorScreen()),
-              ),
+              onTap: _tampilDialogLogin,
               child: Container(
                 padding: const EdgeInsets.symmetric(
                   horizontal: 14,
@@ -102,7 +137,7 @@ class _GuestScreenState extends State<GuestScreen> {
               const SizedBox(height: 4),
 
               CarouselWidget(
-                images: [
+                images: const [
                   'assets/images/Carousel1.png',
                   'assets/images/Carousel2.png',
                   'assets/images/Carousel3.png',
@@ -112,10 +147,7 @@ class _GuestScreenState extends State<GuestScreen> {
               const SizedBox(height: 16),
 
               GestureDetector(
-                onTap: () => Navigator.push(
-                  context,
-                  MaterialPageRoute(builder: (_) => const LoginErrorScreen()),
-                ),
+                onTap: _tampilDialogLogin,
                 child: Container(
                   width: double.infinity,
                   padding: const EdgeInsets.symmetric(
@@ -292,7 +324,6 @@ class _GuestScreenState extends State<GuestScreen> {
               ),
               const SizedBox(height: 20),
 
-              // ── Header Section Disarankan ─────────────────
               const Text(
                 'Disarankan',
                 style: TextStyle(
@@ -311,6 +342,19 @@ class _GuestScreenState extends State<GuestScreen> {
                     .orderBy('created_at', descending: true)
                     .snapshots(),
                 builder: (context, snapshot) {
+                  // Tambahan proteksi jika terjadi error pada Stream
+                  if (snapshot.hasError) {
+                    return const Center(
+                      child: Padding(
+                        padding: EdgeInsets.all(40),
+                        child: Text(
+                          'Terjadi kesalahan saat memuat data',
+                          style: TextStyle(color: Colors.red),
+                        ),
+                      ),
+                    );
+                  }
+
                   if (snapshot.connectionState == ConnectionState.waiting) {
                     return const Center(
                       child: Padding(
@@ -322,7 +366,10 @@ class _GuestScreenState extends State<GuestScreen> {
                     );
                   }
 
-                  if (!snapshot.hasData || snapshot.data!.docs.isEmpty) {
+                  // Pengambilan data yang sangat aman
+                  final allData = snapshot.data?.docs ?? [];
+
+                  if (allData.isEmpty) {
                     return const Center(
                       child: Padding(
                         padding: EdgeInsets.all(40),
@@ -334,15 +381,15 @@ class _GuestScreenState extends State<GuestScreen> {
                     );
                   }
 
-                  final allData = snapshot.data!.docs;
-
                   final filteredData = allData.where((doc) {
-                    final ikan = doc.data() as Map<String, dynamic>;
+                    // Validasi parsing tipe data ke Map yang aman
+                    final ikan = doc.data() as Map<String, dynamic>? ?? {};
                     final nama = (ikan['nama']?.toString() ?? '').toLowerCase();
                     final kategori = (ikan['kategori']?.toString() ?? '')
                         .toLowerCase();
                     final lokasi = (ikan['lokasi']?.toString() ?? '')
                         .toLowerCase();
+
                     final matchesSearch =
                         searchQuery.isEmpty ||
                         nama.contains(searchQuery) ||
@@ -366,7 +413,6 @@ class _GuestScreenState extends State<GuestScreen> {
                     );
                   }
 
-                  // Vertical Grid - semua item, bisa scroll ke bawah
                   return GridView.builder(
                     shrinkWrap: true,
                     physics: const NeverScrollableScrollPhysics(),
@@ -380,7 +426,8 @@ class _GuestScreenState extends State<GuestScreen> {
                     itemCount: filteredData.length,
                     itemBuilder: (context, index) {
                       final doc = filteredData[index];
-                      final ikan = doc.data() as Map<String, dynamic>;
+                      // Menghindari passing map yang null ke Widget
+                      final ikan = doc.data() as Map<String, dynamic>? ?? {};
                       return _GuestFishCard(doc: doc, ikan: ikan);
                     },
                   );
@@ -404,9 +451,11 @@ class _GuestFishCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    // Memaksa seluruh tipe data menjadi String dengan default value yang aman
     final lokasiText = ikan['lokasi']?.toString() ?? '-';
     final harga = ikan['harga']?.toString() ?? '0';
-    final nama = ikan['nama']?.toString() ?? '-';
+    final nama = ikan['nama']?.toString() ?? 'Tanpa Nama';
+    final gambarString = ikan['gambar']?.toString() ?? '';
 
     return GestureDetector(
       onTap: () => Navigator.push(
@@ -437,12 +486,11 @@ class _GuestFishCard extends StatelessWidget {
               child: SizedBox(
                 width: double.infinity,
                 height: 110,
-                child:
-                    ikan['gambar'] != null &&
-                        ikan['gambar'].toString().isNotEmpty
+                child: gambarString.isNotEmpty
                     ? Image.memory(
-                        base64Decode(ikan['gambar']),
+                        base64Decode(gambarString),
                         fit: BoxFit.cover,
+                        // Jika format string base64 rusak/cacat, errorBuilder mencegah crash
                         errorBuilder: (_, __, ___) => _placeholder(),
                       )
                     : _placeholder(),
