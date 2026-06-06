@@ -1,4 +1,5 @@
 import 'dart:convert';
+import 'dart:typed_data';
 
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
@@ -67,7 +68,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
           String displayName = 'Penjual Ikan';
           String location = 'Indonesia';
           String occupation = 'Penjual ikan segar';
-          String profileImage = '';
+          Uint8List? profileImageBytes;
           int followerCount = 0;
 
           if (userSnapshot.hasData && userSnapshot.data!.exists) {
@@ -75,7 +76,10 @@ class _ProfileScreenState extends State<ProfileScreen> {
             displayName = userData['username'] ?? 'Penjual Ikan';
             location = userData['location'] ?? 'Indonesia';
             occupation = userData['occupation'] ?? 'Penjual ikan segar';
-            profileImage = userData['profileImage'] ?? '';
+            if (userData['profileImageBytes'] != null) {
+              final blob = userData['profileImageBytes'] as Blob;
+              profileImageBytes = blob.bytes;
+            }
             followerCount = userData['followers'] ?? 0;
           }
 
@@ -111,10 +115,10 @@ class _ProfileScreenState extends State<ProfileScreen> {
                             child: CircleAvatar(
                               radius: 60,
                               backgroundColor: Colors.grey.shade200,
-                              backgroundImage: profileImage.isNotEmpty
-                                  ? NetworkImage(profileImage)
+                              backgroundImage: profileImageBytes != null
+                                  ? MemoryImage(profileImageBytes!)
                                   : null,
-                              child: profileImage.isEmpty
+                              child: profileImageBytes == null
                                   ? Icon(
                                       Icons.person,
                                       size: 60,
