@@ -23,6 +23,7 @@ class _TokoScreenState extends State<TokoScreen> {
 
   bool _isSubscribed = false;
   bool _isLoadingSub = false;
+  bool _isOwner = false;
 
   final List<String> kategoriOptions = [
     'Semua',
@@ -39,27 +40,52 @@ class _TokoScreenState extends State<TokoScreen> {
   @override
   void initState() {
     super.initState();
-    _cekSubscription();
+    _cekOwnerDanSubscription();
   }
 
-  Future<void> _cekSubscription() async {
+  Future<void> _cekOwnerDanSubscription() async {
     final user = auth.currentUser;
     if (user == null) return;
 
-    final doc = await firestore
+    try {
+      final myDoc = await firestore.collection('users').doc(user.uid).get();
+      if (myDoc.exists) {
+        final myData = myDoc.data() as Map<String, dynamic>;
+        final myUsername = myData['username'] ?? '';
+
+        if (mounted) {
+          setState(() {
+            _isOwner = (myUsername == widget.username);
+          });
+        }
+      }
+    } catch (e) {
+      debugPrint("Gagal mengecek owner: $e");
+    }
+
+    final subDoc = await firestore
         .collection('users')
         .doc(user.uid)
         .collection('langganan')
         .doc(widget.username)
         .get();
 
-    if (mounted) setState(() => _isSubscribed = doc.exists);
+    if (mounted) setState(() => _isSubscribed = subDoc.exists);
   }
 
   Future<void> _toggleSubscription() async {
     final user = auth.currentUser;
     if (user == null) {
       _tampilDialogLogin();
+      return;
+    }
+
+    if (_isOwner) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Kamu tidak bisa mengikuti tokomu sendiri.'),
+        ),
+      );
       return;
     }
 
@@ -228,49 +254,48 @@ class _TokoScreenState extends State<TokoScreen> {
                     ),
                   ),
                   const SizedBox(width: 10),
-
-                  GestureDetector(
-                    onTap: _toggleSubscription,
-                    child: AnimatedContainer(
-                      duration: const Duration(milliseconds: 300),
-                      padding: const EdgeInsets.symmetric(
-                        horizontal: 16,
-                        vertical: 8,
-                      ),
-                      decoration: BoxDecoration(
-                        color: _isSubscribed
-                            ? Colors.grey.shade200
-                            : const Color(0xff6C8EF5),
-                        borderRadius: BorderRadius.circular(20),
-                        border: _isSubscribed
-                            ? Border.all(color: Colors.grey.shade300)
-                            : null,
-                      ),
-                      child: _isLoadingSub
-                          ? const SizedBox(
-                              width: 16,
-                              height: 16,
-                              child: CircularProgressIndicator(
-                                strokeWidth: 2,
-                                color: Colors.white,
+                  if (!_isOwner)
+                    GestureDetector(
+                      onTap: _toggleSubscription,
+                      child: AnimatedContainer(
+                        duration: const Duration(milliseconds: 300),
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 16,
+                          vertical: 8,
+                        ),
+                        decoration: BoxDecoration(
+                          color: _isSubscribed
+                              ? Colors.grey.shade200
+                              : const Color(0xff6C8EF5),
+                          borderRadius: BorderRadius.circular(20),
+                          border: _isSubscribed
+                              ? Border.all(color: Colors.grey.shade300)
+                              : null,
+                        ),
+                        child: _isLoadingSub
+                            ? const SizedBox(
+                                width: 16,
+                                height: 16,
+                                child: CircularProgressIndicator(
+                                  strokeWidth: 2,
+                                  color: Colors.white,
+                                ),
+                              )
+                            : Text(
+                                _isSubscribed ? "Diikuti" : "Ikuti",
+                                style: TextStyle(
+                                  color: _isSubscribed
+                                      ? Colors.black87
+                                      : Colors.white,
+                                  fontWeight: FontWeight.bold,
+                                  fontSize: 13,
+                                ),
                               ),
-                            )
-                          : Text(
-                              _isSubscribed ? "Diikuti" : "Ikuti",
-                              style: TextStyle(
-                                color: _isSubscribed
-                                    ? Colors.black87
-                                    : Colors.white,
-                                fontWeight: FontWeight.bold,
-                                fontSize: 13,
-                              ),
-                            ),
+                      ),
                     ),
-                  ),
                 ],
               ),
             ),
-
             Expanded(
               child: StreamBuilder<QuerySnapshot>(
                 stream: FirebaseFirestore.instance
@@ -284,7 +309,6 @@ class _TokoScreenState extends State<TokoScreen> {
 
                   final produk = snapshot.data?.docs ?? [];
 
-                  // Filter produk berdasarkan kategori yang dipilih
                   final filteredProduk = produk.where((doc) {
                     final item = doc.data() as Map<String, dynamic>;
                     final kategori = (item['kategori']?.toString() ?? '')
@@ -295,7 +319,6 @@ class _TokoScreenState extends State<TokoScreen> {
 
                   return Column(
                     children: [
-                      // Filter kategori
                       SizedBox(
                         height: 42,
                         child: ListView.separated(
@@ -309,9 +332,7 @@ class _TokoScreenState extends State<TokoScreen> {
                             final bool active = category == selectedCategory;
                             return GestureDetector(
                               onTap: () {
-                                setState(() {
-                                  selectedCategory = category;
-                                });
+                                setState(() => selectedCategory = category);
                               },
                               child: Container(
                                 padding: const EdgeInsets.symmetric(
@@ -346,9 +367,8 @@ class _TokoScreenState extends State<TokoScreen> {
                         ),
                       ),
                       const SizedBox(height: 16),
-
                       Padding(
-                        padding: const EdgeInsets.symmetric(horizontal: 16.0),
+                        padding: const EdgeInsets.symmetric(horizontal: 16),
                         child: Row(
                           children: [
                             const Text(
@@ -383,7 +403,6 @@ class _TokoScreenState extends State<TokoScreen> {
                         ),
                       ),
                       const SizedBox(height: 16),
-
                       Expanded(
                         child: filteredProduk.isEmpty
                             ? Center(
@@ -477,7 +496,7 @@ class _TokoScreenState extends State<TokoScreen> {
                                             ),
                                           ),
                                           Padding(
-                                            padding: const EdgeInsets.all(10.0),
+                                            padding: const EdgeInsets.all(10),
                                             child: Column(
                                               crossAxisAlignment:
                                                   CrossAxisAlignment.start,
