@@ -1,11 +1,13 @@
-import 'dart:convert';
-
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 
 import '../widgets/carousel.dart';
+import '../widgets/more.dart';
 import 'detail_screen.dart';
+import 'detail/disarankan.dart';
+import 'detail/langganan.dart';
+import 'detail/terdekat.dart';
 import 'post_screen.dart';
 import 'error/login.dart';
 
@@ -19,6 +21,7 @@ class HomeScreen extends StatefulWidget {
 class _HomeScreenState extends State<HomeScreen> {
   final TextEditingController searchController = TextEditingController();
   String searchQuery = '';
+
   final List<String> kategoriOptions = [
     'Semua',
     'Ikan Air Tawar',
@@ -47,26 +50,32 @@ class _HomeScreenState extends State<HomeScreen> {
         foregroundColor: Colors.black,
         automaticallyImplyLeading: false,
         title: const Text(
-          "WONGIWAK",
+          'WONGIWAK',
           style: TextStyle(
-            color: Colors.black,
-            fontWeight: FontWeight.bold,
-            fontSize: 24,
+            color: Color(0xFF1A1A2E),
+            fontWeight: FontWeight.w800,
+            fontSize: 22,
+            letterSpacing: -0.5,
           ),
         ),
         actions: [
           Padding(
             padding: const EdgeInsets.only(right: 16),
             child: CircleAvatar(
-              radius: 20,
+              radius: 19,
               backgroundColor: const Color(0xFFEEF3FF),
-              child: const Icon(Icons.person, color: Color(0xFF6C8EF5)),
+              child: const Icon(
+                Icons.person_rounded,
+                color: Color(0xFF6C8EF5),
+                size: 20,
+              ),
             ),
           ),
         ],
       ),
       floatingActionButton: FloatingActionButton(
         backgroundColor: const Color(0xFF6C8EF5),
+        elevation: 4,
         onPressed: () {
           if (FirebaseAuth.instance.currentUser == null) {
             Navigator.push(
@@ -80,36 +89,40 @@ class _HomeScreenState extends State<HomeScreen> {
             );
           }
         },
-        child: const Icon(Icons.add),
+        child: const Icon(Icons.add_rounded, size: 26),
       ),
       body: SingleChildScrollView(
+        physics: const BouncingScrollPhysics(),
         child: Padding(
-          padding: const EdgeInsets.all(16),
+          padding: const EdgeInsets.symmetric(horizontal: 16),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
+              const SizedBox(height: 4),
+
               CarouselWidget(
                 images: [
                   'assets/images/Carousel1.png',
                   'assets/images/Carousel2.png',
                   'assets/images/Carousel3.png',
                 ],
-                height: 200,
+                height: 180,
               ),
-              const SizedBox(height: 20),
+              const SizedBox(height: 16),
+
               Container(
                 padding: const EdgeInsets.symmetric(
-                  horizontal: 16,
-                  vertical: 4,
+                  horizontal: 14,
+                  vertical: 2,
                 ),
                 decoration: BoxDecoration(
                   color: Colors.white,
-                  borderRadius: BorderRadius.circular(20),
+                  borderRadius: BorderRadius.circular(14),
                   boxShadow: [
                     BoxShadow(
-                      color: Colors.black.withOpacity(0.04),
-                      blurRadius: 16,
-                      offset: const Offset(0, 8),
+                      color: Colors.black.withOpacity(0.05),
+                      blurRadius: 12,
+                      offset: const Offset(0, 4),
                     ),
                   ],
                 ),
@@ -120,53 +133,78 @@ class _HomeScreenState extends State<HomeScreen> {
                       searchQuery = value.toLowerCase();
                     });
                   },
-                  decoration: InputDecoration(
-                    hintText: 'Cari ikan, kategori, atau lokasi',
-                    prefixIcon: const Icon(Icons.search, color: Colors.grey),
+                  style: const TextStyle(
+                    fontSize: 14,
+                    color: Color(0xFF1A1A2E),
+                  ),
+                  decoration: const InputDecoration(
+                    hintText: 'Cari ikan, kategori, atau lokasi...',
+                    prefixIcon: Icon(
+                      Icons.search_rounded,
+                      color: Color(0xFF9E9E9E),
+                      size: 20,
+                    ),
                     border: InputBorder.none,
-                    hintStyle: const TextStyle(color: Colors.grey),
+                    hintStyle: TextStyle(
+                      color: Color(0xFFBDBDBD),
+                      fontSize: 14,
+                    ),
+                    contentPadding: EdgeInsets.symmetric(vertical: 14),
                   ),
                 ),
               ),
-              const SizedBox(height: 16),
+              const SizedBox(height: 14),
+
               SizedBox(
-                height: 42,
+                height: 36,
                 child: ListView.separated(
                   scrollDirection: Axis.horizontal,
+                  physics: const BouncingScrollPhysics(),
                   itemCount: kategoriOptions.length,
-                  separatorBuilder: (_, __) => const SizedBox(width: 10),
+                  separatorBuilder: (_, __) => const SizedBox(width: 8),
                   itemBuilder: (context, index) {
                     final category = kategoriOptions[index];
                     final bool active = category == selectedCategory;
                     return GestureDetector(
-                      onTap: () {
-                        setState(() {
-                          selectedCategory = category;
-                        });
-                      },
-                      child: Container(
+                      onTap: () => setState(() => selectedCategory = category),
+                      child: AnimatedContainer(
+                        duration: const Duration(milliseconds: 200),
                         padding: const EdgeInsets.symmetric(
-                          horizontal: 16,
-                          vertical: 10,
+                          horizontal: 14,
+                          vertical: 8,
                         ),
                         decoration: BoxDecoration(
                           color: active
                               ? const Color(0xFF6C8EF5)
                               : Colors.white,
-                          borderRadius: BorderRadius.circular(20),
+                          borderRadius: BorderRadius.circular(10),
+                          boxShadow: active
+                              ? [
+                                  BoxShadow(
+                                    color: const Color(
+                                      0xFF6C8EF5,
+                                    ).withOpacity(0.3),
+                                    blurRadius: 8,
+                                    offset: const Offset(0, 3),
+                                  ),
+                                ]
+                              : [],
                           border: Border.all(
                             color: active
                                 ? const Color(0xFF6C8EF5)
-                                : Colors.grey.shade300,
+                                : Colors.grey.shade200,
                           ),
                         ),
                         child: Text(
                           category,
                           style: TextStyle(
-                            color: active ? Colors.white : Colors.black87,
+                            color: active
+                                ? Colors.white
+                                : const Color(0xFF6B6B80),
                             fontWeight: active
-                                ? FontWeight.bold
+                                ? FontWeight.w700
                                 : FontWeight.w500,
+                            fontSize: 12,
                           ),
                         ),
                       ),
@@ -174,7 +212,8 @@ class _HomeScreenState extends State<HomeScreen> {
                   },
                 ),
               ),
-              const SizedBox(height: 10),
+              const SizedBox(height: 22),
+
               StreamBuilder<QuerySnapshot>(
                 stream: FirebaseFirestore.instance
                     .collection('ikan')
@@ -182,19 +221,36 @@ class _HomeScreenState extends State<HomeScreen> {
                     .snapshots(),
                 builder: (context, snapshot) {
                   if (snapshot.connectionState == ConnectionState.waiting) {
-                    return const Center(child: CircularProgressIndicator());
+                    return const Center(
+                      child: Padding(
+                        padding: EdgeInsets.all(40),
+                        child: CircularProgressIndicator(
+                          color: Color(0xFF6C8EF5),
+                        ),
+                      ),
+                    );
                   }
                   if (!snapshot.hasData || snapshot.data!.docs.isEmpty) {
-                    return const Center(child: Text('Belum ada data ikan'));
+                    return const Center(
+                      child: Padding(
+                        padding: EdgeInsets.all(40),
+                        child: Text(
+                          'Belum ada data ikan',
+                          style: TextStyle(color: Colors.grey),
+                        ),
+                      ),
+                    );
                   }
+
                   final allData = snapshot.data!.docs;
+
                   final filteredData = allData.where((doc) {
                     final ikan = doc.data() as Map<String, dynamic>;
-                    final nama = ikan['nama']?.toString().toLowerCase() ?? '';
-                    final kategori =
-                        ikan['kategori']?.toString().toLowerCase() ?? '';
-                    final lokasi =
-                        ikan['lokasi']?.toString().toLowerCase() ?? '';
+                    final nama = (ikan['nama']?.toString() ?? '').toLowerCase();
+                    final kategori = (ikan['kategori']?.toString() ?? '')
+                        .toLowerCase();
+                    final lokasi = (ikan['lokasi']?.toString() ?? '')
+                        .toLowerCase();
                     final matchesSearch =
                         searchQuery.isEmpty ||
                         nama.contains(searchQuery) ||
@@ -208,439 +264,127 @@ class _HomeScreenState extends State<HomeScreen> {
 
                   if (filteredData.isEmpty) {
                     return const Center(
-                      child: Text('Tidak ditemukan ikan yang cocok'),
+                      child: Padding(
+                        padding: EdgeInsets.all(40),
+                        child: Text(
+                          'Tidak ditemukan ikan yang cocok',
+                          style: TextStyle(color: Colors.grey),
+                        ),
+                      ),
                     );
                   }
+
+                  // Section Disarankan: 2 item pertama
+                  final disarankanItems = filteredData.length >= 2
+                      ? filteredData.sublist(0, 2)
+                      : filteredData;
+
+                  // Section Terdekat: item ke-5 dan seterusnya
+                  final terdekatItems = filteredData.length > 4
+                      ? filteredData.sublist(4)
+                      : <QueryDocumentSnapshot>[];
 
                   return Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      const SizedBox(height: 20),
-                      const Text(
-                        'Daftar Ikan',
-                        style: TextStyle(
-                          fontSize: 22,
-                          fontWeight: FontWeight.bold,
+                      MoreSectionWidget(
+                        title: 'Disarankan',
+                        // Kirim semua filteredData agar "Lihat Semua" punya konteks penuh
+                        items: filteredData,
+                        detailBuilder: (id) => DetailScreen(ikanId: id),
+                        onSeeMore: () => Navigator.push(
+                          context,
+                          MaterialPageRoute(
+                            builder: (_) =>
+                                DisarankanScreen(items: filteredData),
+                          ),
                         ),
                       ),
-                      const SizedBox(height: 14),
-                      // Section Disarankan
-                      const Text(
-                        'Disarankan',
-                        style: TextStyle(
-                          fontSize: 18,
-                          fontWeight: FontWeight.bold,
-                        ),
-                      ),
-                      const SizedBox(height: 12),
-                      GridView.builder(
-                        shrinkWrap: true,
-                        physics: const NeverScrollableScrollPhysics(),
-                        gridDelegate:
-                            const SliverGridDelegateWithFixedCrossAxisCount(
-                              crossAxisCount: 2,
-                              mainAxisSpacing: 16,
-                              crossAxisSpacing: 12,
-                              childAspectRatio: 0.8,
-                            ),
-                        itemCount: filteredData.length > 2
-                            ? 2
-                            : filteredData.length,
-                        itemBuilder: (context, index) {
-                          final doc = filteredData[index];
-                          final ikan = doc.data() as Map<String, dynamic>;
-                          final lokasiText = ikan['lokasi']?.toString() ?? '-';
 
-                          return GestureDetector(
-                            onTap: () {
-                              Navigator.push(
-                                context,
-                                MaterialPageRoute(
-                                  builder: (_) => DetailScreen(ikanId: doc.id),
+                      StreamBuilder<QuerySnapshot>(
+                        stream: FirebaseFirestore.instance
+                            .collection('users')
+                            .doc(FirebaseAuth.instance.currentUser!.uid)
+                            .collection('langganan')
+                            .snapshots(),
+                        builder: (context, subSnapshot) {
+                          if (subSnapshot.connectionState ==
+                              ConnectionState.waiting) {
+                            return const Padding(
+                              padding: EdgeInsets.symmetric(vertical: 20),
+                              child: Center(
+                                child: CircularProgressIndicator(
+                                  color: Color(0xFF6C8EF5),
                                 ),
-                              );
-                            },
-                            child: Container(
-                              decoration: BoxDecoration(
-                                color: Colors.white,
-                                borderRadius: BorderRadius.circular(16),
-                                boxShadow: [
-                                  BoxShadow(
-                                    color: Colors.black.withOpacity(0.04),
-                                    blurRadius: 16,
-                                    offset: const Offset(0, 8),
-                                  ),
-                                ],
                               ),
-                              child: Column(
-                                crossAxisAlignment: CrossAxisAlignment.start,
-                                children: [
-                                  Container(
-                                    width: double.infinity,
-                                    height: 100,
-                                    decoration: BoxDecoration(
-                                      color: const Color(0xFFEEF3FF),
-                                      borderRadius: BorderRadius.only(
-                                        topLeft: Radius.circular(16),
-                                        topRight: Radius.circular(16),
-                                      ),
-                                    ),
-                                    child:
-                                        ikan['gambar'] != null &&
-                                            ikan['gambar'].toString().isNotEmpty
-                                        ? ClipRRect(
-                                            borderRadius: BorderRadius.only(
-                                              topLeft: Radius.circular(16),
-                                              topRight: Radius.circular(16),
-                                            ),
-                                            child: Image.memory(
-                                              base64Decode(ikan['gambar']),
-                                              fit: BoxFit.cover,
-                                            ),
-                                          )
-                                        : const Icon(
-                                            Icons.set_meal,
-                                            size: 40,
-                                            color: Color(0xFF6C8EF5),
-                                          ),
-                                  ),
-                                  Padding(
-                                    padding: const EdgeInsets.all(12),
-                                    child: Column(
-                                      crossAxisAlignment:
-                                          CrossAxisAlignment.start,
-                                      children: [
-                                        Text(
-                                          ikan['nama'] ?? '-',
-                                          maxLines: 1,
-                                          overflow: TextOverflow.ellipsis,
-                                          style: const TextStyle(
-                                            fontSize: 14,
-                                            fontWeight: FontWeight.bold,
-                                          ),
-                                        ),
-                                        const SizedBox(height: 4),
-                                        Row(
-                                          children: [
-                                            const Icon(
-                                              Icons.location_on,
-                                              size: 12,
-                                              color: Colors.grey,
-                                            ),
-                                            const SizedBox(width: 4),
-                                            Expanded(
-                                              child: Text(
-                                                lokasiText,
-                                                maxLines: 1,
-                                                overflow: TextOverflow.ellipsis,
-                                                style: const TextStyle(
-                                                  fontSize: 12,
-                                                  color: Colors.grey,
-                                                ),
-                                              ),
-                                            ),
-                                          ],
-                                        ),
-                                        const SizedBox(height: 8),
-                                        Text(
-                                          "Rp ${ikan['harga'] ?? '0'}",
-                                          style: const TextStyle(
-                                            color: Color(0xFF6C8EF5),
-                                            fontWeight: FontWeight.bold,
-                                            fontSize: 12,
-                                          ),
-                                        ),
-                                      ],
-                                    ),
-                                  ),
-                                ],
-                              ),
-                            ),
-                          );
-                        },
-                      ),
-
-                      // Section Sering Dibeli
-                      const Text(
-                        'Sering Dibeli',
-                        style: TextStyle(
-                          fontSize: 18,
-                          fontWeight: FontWeight.bold,
-                        ),
-                      ),
-                      const SizedBox(height: 12),
-                      GridView.builder(
-                        shrinkWrap: true,
-                        physics: const NeverScrollableScrollPhysics(),
-                        gridDelegate:
-                            const SliverGridDelegateWithFixedCrossAxisCount(
-                              crossAxisCount: 2,
-                              mainAxisSpacing: 16,
-                              crossAxisSpacing: 12,
-                              childAspectRatio: 0.8,
-                            ),
-                        itemCount: filteredData.length > 4
-                            ? 2
-                            : (filteredData.length > 2
-                                  ? filteredData.length - 2
-                                  : 0),
-                        itemBuilder: (context, index) {
-                          final actualIndex = index + 2;
-                          if (actualIndex >= filteredData.length) {
-                            return const SizedBox();
+                            );
                           }
-                          final doc = filteredData[actualIndex];
-                          final ikan = doc.data() as Map<String, dynamic>;
-                          final lokasiText = ikan['lokasi']?.toString() ?? '-';
 
-                          return GestureDetector(
-                            onTap: () {
-                              Navigator.push(
-                                context,
-                                MaterialPageRoute(
-                                  builder: (_) => DetailScreen(ikanId: doc.id),
-                                ),
-                              );
-                            },
-                            child: Container(
-                              decoration: BoxDecoration(
-                                color: Colors.white,
-                                borderRadius: BorderRadius.circular(16),
-                                boxShadow: [
-                                  BoxShadow(
-                                    color: Colors.black.withOpacity(0.04),
-                                    blurRadius: 16,
-                                    offset: const Offset(0, 8),
-                                  ),
-                                ],
-                              ),
-                              child: Column(
-                                crossAxisAlignment: CrossAxisAlignment.start,
-                                children: [
-                                  Container(
-                                    width: double.infinity,
-                                    height: 100,
-                                    decoration: BoxDecoration(
-                                      color: const Color(0xFFEEF3FF),
-                                      borderRadius: BorderRadius.only(
-                                        topLeft: Radius.circular(16),
-                                        topRight: Radius.circular(16),
-                                      ),
-                                    ),
-                                    child:
-                                        ikan['gambar'] != null &&
-                                            ikan['gambar'].toString().isNotEmpty
-                                        ? ClipRRect(
-                                            borderRadius: BorderRadius.only(
-                                              topLeft: Radius.circular(16),
-                                              topRight: Radius.circular(16),
-                                            ),
-                                            child: Image.memory(
-                                              base64Decode(ikan['gambar']),
-                                              fit: BoxFit.cover,
-                                            ),
-                                          )
-                                        : const Icon(
-                                            Icons.set_meal,
-                                            size: 40,
-                                            color: Color(0xFF6C8EF5),
-                                          ),
-                                  ),
-                                  Padding(
-                                    padding: const EdgeInsets.all(12),
-                                    child: Column(
-                                      crossAxisAlignment:
-                                          CrossAxisAlignment.start,
-                                      children: [
-                                        Text(
-                                          ikan['nama'] ?? '-',
-                                          maxLines: 1,
-                                          overflow: TextOverflow.ellipsis,
-                                          style: const TextStyle(
-                                            fontSize: 14,
-                                            fontWeight: FontWeight.bold,
-                                          ),
-                                        ),
-                                        const SizedBox(height: 4),
-                                        Row(
-                                          children: [
-                                            const Icon(
-                                              Icons.location_on,
-                                              size: 12,
-                                              color: Colors.grey,
-                                            ),
-                                            const SizedBox(width: 4),
-                                            Expanded(
-                                              child: Text(
-                                                lokasiText,
-                                                maxLines: 1,
-                                                overflow: TextOverflow.ellipsis,
-                                                style: const TextStyle(
-                                                  fontSize: 12,
-                                                  color: Colors.grey,
-                                                ),
-                                              ),
-                                            ),
-                                          ],
-                                        ),
-                                        const SizedBox(height: 8),
-                                        Text(
-                                          "Rp ${ikan['harga'] ?? '0'}",
-                                          style: const TextStyle(
-                                            color: Color(0xFF6C8EF5),
-                                            fontWeight: FontWeight.bold,
-                                            fontSize: 12,
-                                          ),
-                                        ),
-                                      ],
-                                    ),
-                                  ),
-                                ],
-                              ),
-                            ),
-                          );
-                        },
-                      ),
-
-                      // Section Terdekat
-                      const Text(
-                        'Terdekat',
-                        style: TextStyle(
-                          fontSize: 18,
-                          fontWeight: FontWeight.bold,
-                        ),
-                      ),
-                      const SizedBox(height: 12),
-                      GridView.builder(
-                        shrinkWrap: true,
-                        physics: const NeverScrollableScrollPhysics(),
-                        gridDelegate:
-                            const SliverGridDelegateWithFixedCrossAxisCount(
-                              crossAxisCount: 2,
-                              mainAxisSpacing: 16,
-                              crossAxisSpacing: 12,
-                              childAspectRatio: 0.8,
-                            ),
-                        itemCount: filteredData.length > 4
-                            ? filteredData.length - 4
-                            : 0,
-                        itemBuilder: (context, index) {
-                          final actualIndex = index + 4;
-                          if (actualIndex >= filteredData.length) {
-                            return const SizedBox();
+                          if (!subSnapshot.hasData ||
+                              subSnapshot.data!.docs.isEmpty) {
+                            return const SizedBox.shrink();
                           }
-                          final doc = filteredData[actualIndex];
-                          final ikan = doc.data() as Map<String, dynamic>;
-                          final lokasiText = ikan['lokasi']?.toString() ?? '-';
 
-                          return GestureDetector(
-                            onTap: () {
-                              Navigator.push(
-                                context,
-                                MaterialPageRoute(
-                                  builder: (_) => DetailScreen(ikanId: doc.id),
-                                ),
-                              );
-                            },
-                            child: Container(
-                              decoration: BoxDecoration(
-                                color: Colors.white,
-                                borderRadius: BorderRadius.circular(16),
-                                boxShadow: [
-                                  BoxShadow(
-                                    color: Colors.black.withOpacity(0.04),
-                                    blurRadius: 16,
-                                    offset: const Offset(0, 8),
-                                  ),
-                                ],
-                              ),
-                              child: Column(
-                                crossAxisAlignment: CrossAxisAlignment.start,
-                                children: [
-                                  Container(
-                                    width: double.infinity,
-                                    height: 100,
-                                    decoration: BoxDecoration(
-                                      color: const Color(0xFFEEF3FF),
-                                      borderRadius: BorderRadius.only(
-                                        topLeft: Radius.circular(16),
-                                        topRight: Radius.circular(16),
-                                      ),
-                                    ),
-                                    child:
-                                        ikan['gambar'] != null &&
-                                            ikan['gambar'].toString().isNotEmpty
-                                        ? ClipRRect(
-                                            borderRadius: BorderRadius.only(
-                                              topLeft: Radius.circular(16),
-                                              topRight: Radius.circular(16),
-                                            ),
-                                            child: Image.memory(
-                                              base64Decode(ikan['gambar']),
-                                              fit: BoxFit.cover,
-                                            ),
-                                          )
-                                        : const Icon(
-                                            Icons.set_meal,
-                                            size: 40,
-                                            color: Color(0xFF6C8EF5),
-                                          ),
-                                  ),
-                                  Padding(
-                                    padding: const EdgeInsets.all(12),
-                                    child: Column(
-                                      crossAxisAlignment:
-                                          CrossAxisAlignment.start,
-                                      children: [
-                                        Text(
-                                          ikan['nama'] ?? '-',
-                                          maxLines: 1,
-                                          overflow: TextOverflow.ellipsis,
-                                          style: const TextStyle(
-                                            fontSize: 14,
-                                            fontWeight: FontWeight.bold,
-                                          ),
-                                        ),
-                                        const SizedBox(height: 4),
-                                        Row(
-                                          children: [
-                                            const Icon(
-                                              Icons.location_on,
-                                              size: 12,
-                                              color: Colors.grey,
-                                            ),
-                                            const SizedBox(width: 4),
-                                            Expanded(
-                                              child: Text(
-                                                lokasiText,
-                                                maxLines: 1,
-                                                overflow: TextOverflow.ellipsis,
-                                                style: const TextStyle(
-                                                  fontSize: 12,
-                                                  color: Colors.grey,
-                                                ),
-                                              ),
-                                            ),
-                                          ],
-                                        ),
-                                        const SizedBox(height: 8),
-                                        Text(
-                                          "Rp ${ikan['harga'] ?? '0'}",
-                                          style: const TextStyle(
-                                            color: Color(0xFF6C8EF5),
-                                            fontWeight: FontWeight.bold,
-                                            fontSize: 12,
-                                          ),
-                                        ),
-                                      ],
-                                    ),
-                                  ),
-                                ],
+                          final subscribedUsernames = subSnapshot.data!.docs
+                              .map((doc) => doc['username'] as String)
+                              .toList();
+
+                          final shouldLimitItems =
+                              subscribedUsernames.length > 4;
+                          final itemsPerUser = shouldLimitItems ? 2 : 999;
+
+                          final Map<String, List<QueryDocumentSnapshot>>
+                          productsByUser = {};
+                          for (final username in subscribedUsernames) {
+                            productsByUser[username] = filteredData
+                                .where((doc) {
+                                  final ikan =
+                                      doc.data() as Map<String, dynamic>;
+                                  return ikan['username']?.toString() ==
+                                      username;
+                                })
+                                .take(itemsPerUser)
+                                .toList();
+                          }
+
+                          final subscribedProducts = productsByUser.values
+                              .expand((list) => list)
+                              .toList();
+
+                          if (subscribedProducts.isEmpty) {
+                            return const SizedBox.shrink();
+                          }
+
+                          return MoreSectionWidget(
+                            title: 'Langganan',
+                            items: subscribedProducts,
+                            detailBuilder: (id) => DetailScreen(ikanId: id),
+                            onSeeMore: () => Navigator.push(
+                              context,
+                              MaterialPageRoute(
+                                builder: (_) =>
+                                    LanggananScreen(items: subscribedProducts),
                               ),
                             ),
                           );
                         },
                       ),
+
+                      if (terdekatItems.isNotEmpty)
+                        MoreSectionWidget(
+                          title: 'Terdekat',
+                          items: terdekatItems,
+                          detailBuilder: (id) => DetailScreen(ikanId: id),
+                          onSeeMore: () => Navigator.push(
+                            context,
+                            MaterialPageRoute(
+                              builder: (_) =>
+                                  TerdekatScreen(items: terdekatItems),
+                            ),
+                          ),
+                        ),
+
+                      const SizedBox(height: 80),
                     ],
                   );
                 },

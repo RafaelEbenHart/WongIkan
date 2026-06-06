@@ -24,6 +24,18 @@ class _TokoScreenState extends State<TokoScreen> {
   bool _isSubscribed = false;
   bool _isLoadingSub = false;
 
+  final List<String> kategoriOptions = [
+    'Semua',
+    'Ikan Air Tawar',
+    'Ikan Laut',
+    'Ikan Hias',
+    'Udang',
+    'Kepiting',
+    'Lobster',
+    'Lainnya',
+  ];
+  String selectedCategory = 'Semua';
+
   @override
   void initState() {
     super.initState();
@@ -272,8 +284,69 @@ class _TokoScreenState extends State<TokoScreen> {
 
                   final produk = snapshot.data?.docs ?? [];
 
+                  // Filter produk berdasarkan kategori yang dipilih
+                  final filteredProduk = produk.where((doc) {
+                    final item = doc.data() as Map<String, dynamic>;
+                    final kategori = (item['kategori']?.toString() ?? '')
+                        .toLowerCase();
+                    return selectedCategory == 'Semua' ||
+                        kategori == selectedCategory.toLowerCase();
+                  }).toList();
+
                   return Column(
                     children: [
+                      // Filter kategori
+                      SizedBox(
+                        height: 42,
+                        child: ListView.separated(
+                          scrollDirection: Axis.horizontal,
+                          padding: const EdgeInsets.symmetric(horizontal: 16),
+                          itemCount: kategoriOptions.length,
+                          separatorBuilder: (_, __) =>
+                              const SizedBox(width: 10),
+                          itemBuilder: (context, index) {
+                            final category = kategoriOptions[index];
+                            final bool active = category == selectedCategory;
+                            return GestureDetector(
+                              onTap: () {
+                                setState(() {
+                                  selectedCategory = category;
+                                });
+                              },
+                              child: Container(
+                                padding: const EdgeInsets.symmetric(
+                                  horizontal: 16,
+                                  vertical: 10,
+                                ),
+                                decoration: BoxDecoration(
+                                  color: active
+                                      ? const Color(0xFF6C8EF5)
+                                      : Colors.white,
+                                  borderRadius: BorderRadius.circular(20),
+                                  border: Border.all(
+                                    color: active
+                                        ? const Color(0xFF6C8EF5)
+                                        : Colors.grey.shade300,
+                                  ),
+                                ),
+                                child: Text(
+                                  category,
+                                  style: TextStyle(
+                                    color: active
+                                        ? Colors.white
+                                        : Colors.black87,
+                                    fontWeight: active
+                                        ? FontWeight.bold
+                                        : FontWeight.w500,
+                                  ),
+                                ),
+                              ),
+                            );
+                          },
+                        ),
+                      ),
+                      const SizedBox(height: 16),
+
                       Padding(
                         padding: const EdgeInsets.symmetric(horizontal: 16.0),
                         child: Row(
@@ -298,7 +371,7 @@ class _TokoScreenState extends State<TokoScreen> {
                                 borderRadius: BorderRadius.circular(12),
                               ),
                               child: Text(
-                                "${produk.length} produk",
+                                "${filteredProduk.length} produk",
                                 style: const TextStyle(
                                   color: Color(0xff6C8EF5),
                                   fontSize: 12,
@@ -312,7 +385,7 @@ class _TokoScreenState extends State<TokoScreen> {
                       const SizedBox(height: 16),
 
                       Expanded(
-                        child: produk.isEmpty
+                        child: filteredProduk.isEmpty
                             ? Center(
                                 child: Column(
                                   mainAxisAlignment: MainAxisAlignment.center,
@@ -345,12 +418,12 @@ class _TokoScreenState extends State<TokoScreen> {
                                       mainAxisSpacing: 12,
                                       childAspectRatio: 0.75,
                                     ),
-                                itemCount: produk.length,
+                                itemCount: filteredProduk.length,
                                 itemBuilder: (context, index) {
                                   final item =
-                                      produk[index].data()
+                                      filteredProduk[index].data()
                                           as Map<String, dynamic>;
-                                  final ikanId = produk[index].id;
+                                  final ikanId = filteredProduk[index].id;
                                   final nama = item['nama'] ?? '';
                                   final harga = item['harga'] ?? '';
                                   final kategori = item['kategori'] ?? '';
