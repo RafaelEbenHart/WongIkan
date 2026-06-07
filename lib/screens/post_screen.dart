@@ -87,7 +87,7 @@ class _PostScreenState extends State<PostScreen> with WidgetsBindingObserver {
           .get();
 
       if (userData.exists) {
-        final data = userData.data() as Map<String, dynamic>?;
+        final data = userData.data();
         setState(() {
           username = data?['username'] ?? 'User';
           // Ambil dari 'location' (karena di ProfileScreen disimpannya dengan nama ini)
