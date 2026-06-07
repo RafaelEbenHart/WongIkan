@@ -55,7 +55,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
 
         if (doc.exists) {
           // PERBAIKAN: Ambil data sebagai Map untuk mencegah error "field does not exist"
-          final data = doc.data() as Map<String, dynamic>?;
+          final data = doc.data();
 
           if (mounted) {
             setState(() {
