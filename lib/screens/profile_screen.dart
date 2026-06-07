@@ -6,6 +6,7 @@ import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:wongiwak/screens/sign_in_screen.dart';
 import 'dart:convert';
 import 'home_screen.dart';
 import 'post_screen.dart';
@@ -26,6 +27,63 @@ class _ProfileScreenState extends State<ProfileScreen> {
   void initState() {
     super.initState();
     currentUser = FirebaseAuth.instance.currentUser;
+  }
+
+  // FITUR BARU: Fungsi untuk memproses Logout
+  Future<void> _logout() async {
+    // Menampilkan dialog konfirmasi sebelum benar-benar logout
+    bool? confirmLogout = await showDialog<bool>(
+      context: context,
+      builder: (BuildContext context) {
+        return AlertDialog(
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(16),
+          ),
+          title: const Text(
+            'Konfirmasi Logout',
+            style: TextStyle(fontWeight: FontWeight.bold),
+          ),
+          content: const Text('Apakah kamu yakin ingin keluar dari akun ini?'),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(context, false), // Batal
+              child: const Text(
+                'Batal',
+                style: TextStyle(color: Colors.black54),
+              ),
+            ),
+            ElevatedButton(
+              style: ElevatedButton.styleFrom(
+                backgroundColor: Colors.red.shade400,
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(8),
+                ),
+              ),
+              onPressed: () => Navigator.pop(context, true), // Yakin
+              child: const Text(
+                'Logout',
+                style: TextStyle(color: Colors.white),
+              ),
+            ),
+          ],
+        );
+      },
+    );
+
+    // Jika user menekan tombol "Logout"
+    if (confirmLogout == true) {
+      await FirebaseAuth.instance.signOut();
+
+      if (!mounted) return;
+
+      // Arahkan ke halaman SignInScreen dan hapus semua history tumpukan screen sebelumnya
+      Navigator.pushAndRemoveUntil(
+        context,
+        // Sesuaikan nama class ini jika class halaman login-mu berbeda
+        MaterialPageRoute(builder: (context) => const SignInScreen()),
+        (Route<dynamic> route) => false,
+      );
+    }
   }
 
   @override
@@ -54,6 +112,14 @@ class _ProfileScreenState extends State<ProfileScreen> {
           child: const Icon(Icons.arrow_back, color: Colors.black),
         ),
         automaticallyImplyLeading: false,
+        // FITUR BARU: Menambahkan tombol icon logout di pojok kanan atas
+        actions: [
+          IconButton(
+            icon: Icon(Icons.logout, color: Colors.red.shade400),
+            tooltip: 'Logout',
+            onPressed: _logout,
+          ),
+        ],
       ),
       body: StreamBuilder<DocumentSnapshot>(
         stream: FirebaseFirestore.instance
