@@ -4,9 +4,6 @@ import 'dart:typed_data';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
-import 'package:firebase_auth/firebase_auth.dart';
-import 'package:cloud_firestore/cloud_firestore.dart';
-import 'dart:convert';
 import 'home_screen.dart';
 import 'post_screen.dart';
 import 'error/login.dart';
@@ -31,17 +28,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
   @override
   Widget build(BuildContext context) {
     if (currentUser == null) {
-      return Scaffold(
-        appBar: AppBar(
-          title: const Text('Profile'),
-          leading: GestureDetector(
-            onTap: () => Navigator.pop(context),
-            child: const Icon(Icons.arrow_back),
-          ),
-          automaticallyImplyLeading: false,
-        ),
-        body: const Center(child: Text('Silakan login terlebih dahulu')),
-      );
+      return const LoginErrorScreen();
     }
 
     return Scaffold(
