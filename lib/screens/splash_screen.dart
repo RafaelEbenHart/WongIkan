@@ -39,7 +39,7 @@ class _SplashScreenState extends State<SplashScreen>
       } else {
         Navigator.pushReplacement(
           context,
-          MaterialPageRoute(builder: (_) => const SignInScreen()),
+          MaterialPageRoute(builder: (_) => const HomeScreen()),
         );
       }
     });
@@ -58,7 +58,7 @@ class _SplashScreenState extends State<SplashScreen>
       body: Center(
         child: FadeTransition(
           opacity: _animation,
-          child: Image.asset('assets/logo.png', width: 150, height: 150),
+          child: Image.asset('assets/logo/logo.png', width: 150, height: 150),
         ),
       ),
     );

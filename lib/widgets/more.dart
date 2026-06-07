@@ -3,21 +3,10 @@ import 'dart:convert';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
 
-/// Widget horizontal-scrollable untuk section "Disarankan", "Langganan", "Terdekat".
-///
-/// Cara kerja overscroll:
-/// - Maksimal 6 card ditampilkan secara horizontal
-/// - Saat user scroll sampai card terakhir dan MASIH paksa scroll ke kanan,
-///   muncul overlay hint "Lihat Semua " di kanan
-/// - Jika user lepas (overscroll cukup), otomatis navigate ke screen penuh
-/// - Tombol "Lihat Semua" di header juga selalu bisa ditekan
 class MoreSectionWidget extends StatefulWidget {
   final String title;
   final List<QueryDocumentSnapshot> items;
   final VoidCallback onSeeMore;
-
-  /// Builder untuk membuka halaman detail.
-  /// Contoh: detailBuilder: (id) => DetailScreen(ikanId: id)
   final Widget Function(String ikanId) detailBuilder;
 
   const MoreSectionWidget({
@@ -35,85 +24,55 @@ class MoreSectionWidget extends StatefulWidget {
 class _MoreSectionWidgetState extends State<MoreSectionWidget>
     with SingleTickerProviderStateMixin {
   late final ScrollController _scrollController;
-  late final AnimationController _hintAnimController;
-  late final Animation<double> _hintOpacity;
-  late final Animation<double> _hintSlide;
+  late final AnimationController _btnAnimController;
+  late final Animation<double> _btnOpacity;
+  late final Animation<double> _btnSlide;
 
-  // Seberapa jauh overscroll sebelum trigger navigate (dalam pixel)
-  static const double _triggerThreshold = 60.0;
-
-  double _overscrollAmount = 0.0;
-  bool _navigating = false;
+  bool _atEnd = false;
 
   @override
   void initState() {
     super.initState();
 
-    _scrollController = ScrollController();
+    _scrollController = ScrollController()..addListener(_onScroll);
 
-    _hintAnimController = AnimationController(
+    _btnAnimController = AnimationController(
       vsync: this,
-      duration: const Duration(milliseconds: 200),
+      duration: const Duration(milliseconds: 250),
     );
 
-    _hintOpacity = CurvedAnimation(
-      parent: _hintAnimController,
+    _btnOpacity = CurvedAnimation(
+      parent: _btnAnimController,
       curve: Curves.easeOut,
     );
 
-    _hintSlide = Tween<double>(begin: 30, end: 0).animate(
-      CurvedAnimation(parent: _hintAnimController, curve: Curves.easeOut),
+    _btnSlide = Tween<double>(begin: 20, end: 0).animate(
+      CurvedAnimation(parent: _btnAnimController, curve: Curves.easeOut),
     );
   }
 
   @override
   void dispose() {
-    _scrollController.dispose();
-    _hintAnimController.dispose();
+    _scrollController
+      ..removeListener(_onScroll)
+      ..dispose();
+    _btnAnimController.dispose();
     super.dispose();
   }
 
-  bool _onNotification(ScrollNotification notification) {
-    // OverscrollNotification terjadi saat user paksa scroll melewati batas
-    if (notification is OverscrollNotification) {
-      // Hanya peduli overscroll ke KANAN (nilai positif)
-      if (notification.overscroll > 0) {
-        setState(() {
-          _overscrollAmount += notification.overscroll;
-        });
+  void _onScroll() {
+    if (!_scrollController.hasClients) return;
+    final pos = _scrollController.position;
+    // Anggap "di ujung" jika sisa scroll < 4px (toleransi sub-pixel)
+    final reachedEnd = pos.pixels >= pos.maxScrollExtent - 4;
 
-        // Tampilkan hint saat mulai overscroll
-        if (_overscrollAmount > 5 && !_hintAnimController.isCompleted) {
-          _hintAnimController.forward();
-        }
-
-        // Trigger navigate jika overscroll cukup jauh
-        if (_overscrollAmount >= _triggerThreshold && !_navigating) {
-          _navigating = true;
-          // Sedikit delay agar user sempat lihat hint
-          Future.delayed(const Duration(milliseconds: 150), () {
-            if (mounted) {
-              setState(() => _overscrollAmount = 0);
-              _hintAnimController.reverse();
-              _navigating = false;
-              widget.onSeeMore();
-            }
-          });
-        }
-      }
+    if (reachedEnd && !_atEnd) {
+      _atEnd = true;
+      _btnAnimController.forward();
+    } else if (!reachedEnd && _atEnd) {
+      _atEnd = false;
+      _btnAnimController.reverse();
     }
-
-    // Reset saat scroll kembali normal
-    if (notification is ScrollUpdateNotification) {
-      if (_overscrollAmount > 0 &&
-          notification.scrollDelta != null &&
-          notification.scrollDelta! < 0) {
-        setState(() => _overscrollAmount = 0);
-        _hintAnimController.reverse();
-      }
-    }
-
-    return false;
   }
 
   @override
@@ -122,51 +81,27 @@ class _MoreSectionWidgetState extends State<MoreSectionWidget>
 
     const int maxVisible = 6;
     final displayItems = widget.items.take(maxVisible).toList();
-
-    final double overscrollProgress = (_overscrollAmount / _triggerThreshold)
-        .clamp(0.0, 1.0);
+    // Hanya tampilkan tombol jika item lebih dari yang muat di layar
+    // (jika semua item muat, tidak perlu tombol karena tidak bisa scroll)
+    final bool canScroll = widget.items.length > 2;
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         Padding(
           padding: const EdgeInsets.only(bottom: 12),
-          child: Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-            children: [
-              Text(
-                widget.title,
-                style: const TextStyle(
-                  fontSize: 17,
-                  fontWeight: FontWeight.w700,
-                  color: Color(0xFF1A1A2E),
-                  letterSpacing: -0.3,
-                ),
-              ),
-              GestureDetector(
-                onTap: widget.onSeeMore,
-                child: Container(
-                  padding: const EdgeInsets.symmetric(
-                    horizontal: 12,
-                    vertical: 5,
-                  ),
-                  decoration: BoxDecoration(
-                    color: const Color(0xFF6C8EF5).withOpacity(0.10),
-                    borderRadius: BorderRadius.circular(20),
-                  ),
-                  child: const Text(
-                    'Lihat Semua',
-                    style: TextStyle(
-                      fontSize: 12,
-                      color: Color(0xFF6C8EF5),
-                      fontWeight: FontWeight.w600,
-                    ),
-                  ),
-                ),
-              ),
-            ],
+          child: Text(
+            widget.title,
+            style: const TextStyle(
+              fontSize: 17,
+              fontWeight: FontWeight.w700,
+              color: Color(0xFF1A1A2E),
+              letterSpacing: -0.3,
+            ),
           ),
         ),
+        // Transform.translate -12 ke kiri agar shadow card pertama
+        // tidak terpotong oleh padding horizontal HomeScreen.
         Transform.translate(
           offset: const Offset(-12, 0),
           child: SizedBox(
@@ -176,14 +111,14 @@ class _MoreSectionWidgetState extends State<MoreSectionWidget>
               clipBehavior: Clip.none,
               children: [
                 NotificationListener<ScrollNotification>(
-                  onNotification: _onNotification,
+                  onNotification: (_) => false,
                   child: ListView.builder(
                     controller: _scrollController,
                     scrollDirection: Axis.horizontal,
-                    physics: const ClampingScrollPhysics(),
+                    physics: const BouncingScrollPhysics(),
                     padding: const EdgeInsets.only(
                       left: 12,
-                      right: 4,
+                      right: 8,
                       bottom: 8,
                       top: 4,
                     ),
@@ -191,123 +126,58 @@ class _MoreSectionWidgetState extends State<MoreSectionWidget>
                     itemBuilder: (context, index) {
                       final doc = displayItems[index];
                       final ikan = doc.data() as Map<String, dynamic>;
-                      final bool isLast = index == displayItems.length - 1;
-
                       return _FishCard(
                         doc: doc,
                         ikan: ikan,
                         detailBuilder: widget.detailBuilder,
-                        isLast: isLast,
                       );
                     },
                   ),
                 ),
 
-                AnimatedBuilder(
-                  animation: _hintAnimController,
-                  builder: (context, child) {
-                    return Positioned(
-                      right: 0,
-                      top: 0,
-                      bottom: 6,
+                if (canScroll)
+                  AnimatedBuilder(
+                    animation: _btnAnimController,
+                    builder: (context, child) => Positioned(
+                      right: 8,
+                      // Tengah vertikal: (213 - ukuran tombol) / 2
+                      top: 75,
                       child: Opacity(
-                        opacity: _hintOpacity.value,
+                        opacity: _btnOpacity.value,
                         child: Transform.translate(
-                          offset: Offset(_hintSlide.value, 0),
+                          offset: Offset(_btnSlide.value, 0),
                           child: child,
                         ),
                       ),
-                    );
-                  },
-                  child: GestureDetector(
-                    onTap: widget.onSeeMore,
-                    child: Container(
-                      width: 90,
-                      decoration: BoxDecoration(
-                        gradient: LinearGradient(
-                          colors: [
-                            Colors.transparent,
-                            const Color(
-                              0xFFF4F6FF,
-                            ).withOpacity(0.7 + (overscrollProgress * 0.3)),
-                            const Color(0xFFF4F6FF),
+                    ),
+                    child: GestureDetector(
+                      onTap: widget.onSeeMore,
+                      child: Container(
+                        width: 44,
+                        height: 44,
+                        decoration: BoxDecoration(
+                          color: const Color(0xFF6C8EF5),
+                          shape: BoxShape.circle,
+                          boxShadow: [
+                            BoxShadow(
+                              color: const Color(0xFF6C8EF5).withOpacity(0.40),
+                              blurRadius: 12,
+                              offset: const Offset(0, 4),
+                            ),
                           ],
-                          begin: Alignment.centerLeft,
-                          end: Alignment.centerRight,
                         ),
-                      ),
-                      child: Align(
-                        alignment: Alignment.centerRight,
-                        child: Padding(
-                          padding: const EdgeInsets.only(right: 8),
-                          child: Column(
-                            mainAxisSize: MainAxisSize.min,
-                            children: [
-                              // Lingkaran progress
-                              Stack(
-                                alignment: Alignment.center,
-                                children: [
-                                  SizedBox(
-                                    width: 42,
-                                    height: 42,
-                                    child: CircularProgressIndicator(
-                                      value: overscrollProgress,
-                                      strokeWidth: 2.5,
-                                      backgroundColor: const Color(
-                                        0xFF6C8EF5,
-                                      ).withOpacity(0.15),
-                                      valueColor:
-                                          const AlwaysStoppedAnimation<Color>(
-                                            Color(0xFF6C8EF5),
-                                          ),
-                                    ),
-                                  ),
-                                  Container(
-                                    width: 34,
-                                    height: 34,
-                                    decoration: BoxDecoration(
-                                      color: const Color(0xFF6C8EF5),
-                                      shape: BoxShape.circle,
-                                      boxShadow: [
-                                        BoxShadow(
-                                          color: const Color(
-                                            0xFF6C8EF5,
-                                          ).withOpacity(0.35),
-                                          blurRadius: 8,
-                                          offset: const Offset(0, 2),
-                                        ),
-                                      ],
-                                    ),
-                                    child: const Icon(
-                                      Icons.arrow_forward_rounded,
-                                      color: Colors.white,
-                                      size: 16,
-                                    ),
-                                  ),
-                                ],
-                              ),
-                              const SizedBox(height: 6),
-                              const Text(
-                                'Lihat\nSemua',
-                                textAlign: TextAlign.center,
-                                style: TextStyle(
-                                  fontSize: 10,
-                                  color: Color(0xFF6C8EF5),
-                                  fontWeight: FontWeight.w700,
-                                  height: 1.3,
-                                ),
-                              ),
-                            ],
-                          ),
+                        child: const Icon(
+                          Icons.arrow_forward_rounded,
+                          color: Colors.white,
+                          size: 20,
                         ),
                       ),
                     ),
                   ),
-                ),
               ],
             ),
           ),
-        ), // tutup Transform.translate > SizedBox
+        ),
 
         const SizedBox(height: 20),
       ],
@@ -319,13 +189,11 @@ class _FishCard extends StatelessWidget {
   final QueryDocumentSnapshot doc;
   final Map<String, dynamic> ikan;
   final Widget Function(String ikanId) detailBuilder;
-  final bool isLast;
 
   const _FishCard({
     required this.doc,
     required this.ikan,
     required this.detailBuilder,
-    this.isLast = false,
   });
 
   Widget _placeholder() => Container(
@@ -348,7 +216,7 @@ class _FishCard extends StatelessWidget {
       ),
       child: Container(
         width: 148,
-        margin: EdgeInsets.only(right: isLast ? 70 : 10),
+        margin: const EdgeInsets.only(right: 10),
         decoration: BoxDecoration(
           color: Colors.white,
           borderRadius: BorderRadius.circular(14),
@@ -383,6 +251,7 @@ class _FishCard extends StatelessWidget {
                     : _placeholder(),
               ),
             ),
+
             Padding(
               padding: const EdgeInsets.fromLTRB(10, 8, 10, 10),
               child: Column(

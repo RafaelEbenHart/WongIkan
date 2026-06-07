@@ -89,17 +89,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
   @override
   Widget build(BuildContext context) {
     if (currentUser == null) {
-      return Scaffold(
-        appBar: AppBar(
-          title: const Text('Profile'),
-          leading: GestureDetector(
-            onTap: () => Navigator.pop(context),
-            child: const Icon(Icons.arrow_back),
-          ),
-          automaticallyImplyLeading: false,
-        ),
-        body: const Center(child: Text('Silakan login terlebih dahulu')),
-      );
+      return const LoginErrorScreen();
     }
 
     return Scaffold(
