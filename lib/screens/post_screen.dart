@@ -8,6 +8,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:geolocator/geolocator.dart';
 import 'package:image_picker/image_picker.dart';
+import 'package:wongiwak/screens/settings_screen.dart'; // Sesuaikan path ini jika berbeda
 
 import 'sign_in_screen.dart';
 
@@ -24,7 +25,7 @@ class _PostScreenState extends State<PostScreen> with WidgetsBindingObserver {
   final TextEditingController namaController = TextEditingController();
   final TextEditingController hargaController = TextEditingController();
   final TextEditingController deskripsiController = TextEditingController();
-  final TextEditingController lokasiController = TextEditingController();
+  // lokasiController SUDAH DIHAPUS SEPENUHNYA
 
   Uint8List? imageBytes;
   String? base64Image;
@@ -33,7 +34,7 @@ class _PostScreenState extends State<PostScreen> with WidgetsBindingObserver {
   bool isPosting = false;
 
   String username = '';
-  String location = '';
+  String alamat = '';
 
   double? latitude;
   double? longitude;
@@ -56,7 +57,6 @@ class _PostScreenState extends State<PostScreen> with WidgetsBindingObserver {
   void initState() {
     super.initState();
     WidgetsBinding.instance.addObserver(this);
-
     if (widget.isLogin) {
       getUserData();
     }
@@ -68,72 +68,72 @@ class _PostScreenState extends State<PostScreen> with WidgetsBindingObserver {
     namaController.dispose();
     hargaController.dispose();
     deskripsiController.dispose();
-    lokasiController.dispose();
     super.dispose();
   }
 
   @override
   void didChangeAppLifecycleState(AppLifecycleState state) {
     if (state == AppLifecycleState.resumed && widget.isLogin) {
-      // Refresh user data when screen comes back to focus
       getUserData();
     }
   }
 
   Future<void> getUserData() async {
-    final uid = FirebaseAuth.instance.currentUser!.uid;
+    try {
+      final uid = FirebaseAuth.instance.currentUser!.uid;
+      final userData = await FirebaseFirestore.instance
+          .collection('users')
+          .doc(uid)
+          .get();
 
-    final userData = await FirebaseFirestore.instance
-        .collection('users')
-        .doc(uid)
-        .get();
-
-    final data = userData.data();
-
-    setState(() {
-      username = data?['username'] ?? 'User';
-      location = data?['location'] ?? 'Alamat belum ada';
-      isLoading = false;
-    });
+      if (userData.exists) {
+        final data = userData.data() as Map<String, dynamic>?;
+        setState(() {
+          username = data?['username'] ?? 'User';
+          // Ambil dari 'location' (karena di ProfileScreen disimpannya dengan nama ini)
+          // Jika kosong, ambil dari 'alamat', jika masih kosong, set string kosong ''
+          alamat = data?['location'] ?? data?['alamat'] ?? '';
+          isLoading = false;
+        });
+      } else {
+        setState(() {
+          isLoading = false;
+        });
+      }
+    } catch (e) {
+      setState(() {
+        isLoading = false;
+      });
+      debugPrint('Error mengambil data user: $e');
+    }
   }
 
   Future<void> getLocation() async {
     try {
       if (kIsWeb) {
         final position = await Geolocator.getCurrentPosition();
-
         latitude = position.latitude;
         longitude = position.longitude;
-
         return;
       }
 
       bool serviceEnabled = await Geolocator.isLocationServiceEnabled();
-
       if (!serviceEnabled) {
         if (mounted) {
           ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(
-              content: Text('Layanan lokasi tidak diaktifkan'),
-              duration: Duration(seconds: 2),
-            ),
+            const SnackBar(content: Text('Layanan lokasi tidak diaktifkan')),
           );
         }
         return;
       }
 
       LocationPermission permission = await Geolocator.checkPermission();
-
       if (permission == LocationPermission.denied) {
         permission = await Geolocator.requestPermission();
-
         if (permission == LocationPermission.denied) {
           if (mounted) {
             ScaffoldMessenger.of(context).showSnackBar(
-              const SnackBar(
-                content: Text('Izin lokasi ditolak'),
-                duration: Duration(seconds: 2),
-              ),
+              const SnackBar(content: Text('Izin lokasi ditolak')),
             );
           }
           return;
@@ -147,7 +147,6 @@ class _PostScreenState extends State<PostScreen> with WidgetsBindingObserver {
               content: Text(
                 'Izin lokasi ditolak permanen. Cek setting aplikasi',
               ),
-              duration: Duration(seconds: 2),
             ),
           );
         }
@@ -162,27 +161,24 @@ class _PostScreenState extends State<PostScreen> with WidgetsBindingObserver {
 
       latitude = position.latitude;
       longitude = position.longitude;
-
-      debugPrint("Location obtained: $latitude, $longitude");
     } catch (e) {
-      debugPrint("LOCATION ERROR: $e");
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text('Error mengambil lokasi: $e'),
-            duration: const Duration(seconds: 2),
-          ),
-        );
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(SnackBar(content: Text('Error mengambil lokasi: $e')));
       }
     }
   }
 
   Future<void> pickImage() async {
-    final pickedFile = await picker.pickImage(source: ImageSource.gallery);
+    // Kualitas gambar dikompres agar tidak menyebabkan invalid-argument di Firestore
+    final pickedFile = await picker.pickImage(
+      source: ImageSource.gallery,
+      imageQuality: 25,
+    );
 
     if (pickedFile != null) {
       final bytes = await pickedFile.readAsBytes();
-
       setState(() {
         imageBytes = bytes;
         base64Image = base64Encode(bytes);
@@ -190,33 +186,76 @@ class _PostScreenState extends State<PostScreen> with WidgetsBindingObserver {
     }
   }
 
-  Future<void> submitPost() async {
-    if (imageBytes == null ||
-        namaController.text.isEmpty ||
-        hargaController.text.isEmpty ||
-        deskripsiController.text.isEmpty ||
-        lokasiController.text.isEmpty) {
-      ScaffoldMessenger.of(
-        context,
-      ).showSnackBar(const SnackBar(content: Text('Lengkapi semua data')));
+  void _tampilDialogAlamat() {
+    showDialog(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+        title: const Text(
+          "Lokasi Belum Diisi",
+          style: TextStyle(fontWeight: FontWeight.bold),
+        ),
+        content: const Text(
+          "Kamu belum mengatur lokasi/alamat. Silakan atur terlebih dahulu melalui pengaturan profil sebelum membuat postingan.",
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(ctx),
+            child: const Text("Batal", style: TextStyle(color: Colors.black54)),
+          ),
+          ElevatedButton(
+            style: ElevatedButton.styleFrom(
+              backgroundColor: const Color(0xFF5E7AC4),
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(10),
+              ),
+            ),
+            onPressed: () {
+              Navigator.pop(ctx);
+              Navigator.push(
+                context,
+                MaterialPageRoute(builder: (_) => const SettingsScreen()),
+              ).then((_) => getUserData());
+            },
+            child: const Text(
+              "Atur Lokasi",
+              style: TextStyle(color: Colors.white),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
 
+  Future<void> submitPost() async {
+    // Validasi lokasi langsung pakai variabel alamat
+    if (alamat.isEmpty) {
+      _tampilDialogAlamat();
       return;
     }
 
-    setState(() {
-      isPosting = true;
-    });
+    // Validasi controller text
+    if (imageBytes == null ||
+        namaController.text.isEmpty ||
+        hargaController.text.isEmpty ||
+        deskripsiController.text.isEmpty) {
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(const SnackBar(content: Text('Lengkapi semua data')));
+      return;
+    }
+
+    setState(() => isPosting = true);
 
     try {
       await getLocation();
-
-      final lokasiText = lokasiController.text.trim();
 
       await FirebaseFirestore.instance.collection('ikan').add({
         'nama': namaController.text.trim(),
         'harga': hargaController.text.trim(),
         'deskripsi': deskripsiController.text.trim(),
-        'lokasi': lokasiText,
+        'lokasi': alamat, // Data lokasi diisi otomatis dari profil
+        'alamat': alamat,
         'kategori': selectedKategori,
         'gambar': base64Image,
         'username': username,
@@ -227,7 +266,6 @@ class _PostScreenState extends State<PostScreen> with WidgetsBindingObserver {
       });
 
       if (!mounted) return;
-
       Navigator.pop(context);
 
       ScaffoldMessenger.of(
@@ -238,9 +276,7 @@ class _PostScreenState extends State<PostScreen> with WidgetsBindingObserver {
         context,
       ).showSnackBar(SnackBar(content: Text('Error: $e')));
     } finally {
-      setState(() {
-        isPosting = false;
-      });
+      setState(() => isPosting = false);
     }
   }
 
@@ -279,6 +315,7 @@ class _PostScreenState extends State<PostScreen> with WidgetsBindingObserver {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
+            // Bagian Header & Gambar
             Container(
               width: double.infinity,
               padding: const EdgeInsets.all(22),
@@ -304,50 +341,6 @@ class _PostScreenState extends State<PostScreen> with WidgetsBindingObserver {
                   const Text(
                     'Unggah foto dan isi kategori, nama, harga, dan detail ikan.',
                     style: TextStyle(color: Colors.black54),
-                  ),
-                  const SizedBox(height: 16),
-                  Container(
-                    width: double.infinity,
-                    padding: const EdgeInsets.all(16),
-                    decoration: BoxDecoration(
-                      color: const Color(0xFFF4F6FF),
-                      borderRadius: BorderRadius.circular(18),
-                    ),
-                    child: Row(
-                      children: [
-                        CircleAvatar(
-                          radius: 24,
-                          backgroundColor: const Color(0xFFEEF3FF),
-                          child: const Icon(
-                            Icons.person,
-                            color: Color(0xFF6C8EF5),
-                          ),
-                        ),
-                        const SizedBox(width: 14),
-                        Expanded(
-                          child: Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              Text(
-                                username,
-                                style: const TextStyle(
-                                  fontWeight: FontWeight.bold,
-                                  fontSize: 16,
-                                ),
-                              ),
-                              const SizedBox(height: 6),
-                              Text(
-                                location,
-                                style: const TextStyle(
-                                  color: Colors.black54,
-                                  fontSize: 14,
-                                ),
-                              ),
-                            ],
-                          ),
-                        ),
-                      ],
-                    ),
                   ),
                   const SizedBox(height: 20),
                   GestureDetector(
@@ -395,16 +388,14 @@ class _PostScreenState extends State<PostScreen> with WidgetsBindingObserver {
                     items: kategoriList.map((e) {
                       return DropdownMenuItem(value: e, child: Text(e));
                     }).toList(),
-                    onChanged: (v) {
-                      setState(() {
-                        selectedKategori = v!;
-                      });
-                    },
+                    onChanged: (v) => setState(() => selectedKategori = v!),
                   ),
                 ],
               ),
             ),
             const SizedBox(height: 20),
+
+            // Bagian Detail Ikan
             Container(
               width: double.infinity,
               padding: const EdgeInsets.all(22),
@@ -449,6 +440,7 @@ class _PostScreenState extends State<PostScreen> with WidgetsBindingObserver {
                     ),
                   ),
                   const SizedBox(height: 16),
+
                   const Align(
                     alignment: Alignment.centerLeft,
                     child: Text(
@@ -478,6 +470,8 @@ class _PostScreenState extends State<PostScreen> with WidgetsBindingObserver {
                     ),
                   ),
                   const SizedBox(height: 16),
+
+                  // PERBAIKAN: Kotak Lokasi yang Bisa Dipencet (Clickable)
                   const Align(
                     alignment: Alignment.centerLeft,
                     child: Text(
@@ -489,23 +483,69 @@ class _PostScreenState extends State<PostScreen> with WidgetsBindingObserver {
                     ),
                   ),
                   const SizedBox(height: 8),
-                  TextField(
-                    controller: lokasiController,
-                    decoration: InputDecoration(
-                      hintText: 'Contoh: Pasar Ikan Asem',
-                      filled: true,
-                      fillColor: const Color(0xFFF4F6FF),
-                      contentPadding: const EdgeInsets.symmetric(
+                  GestureDetector(
+                    onTap: () {
+                      // Saat kotak dipencet, akan pindah ke SettingsScreen
+                      Navigator.push(
+                        context,
+                        MaterialPageRoute(
+                          builder: (_) => const SettingsScreen(),
+                        ),
+                      ).then(
+                        (_) => getUserData(),
+                      ); // Otomatis refresh data saat kembali
+                    },
+                    child: Container(
+                      padding: const EdgeInsets.symmetric(
                         horizontal: 16,
                         vertical: 18,
                       ),
-                      border: OutlineInputBorder(
+                      decoration: BoxDecoration(
+                        color: alamat.isEmpty
+                            ? Colors.red.shade50
+                            : const Color(0xFFF4F6FF),
                         borderRadius: BorderRadius.circular(16),
-                        borderSide: BorderSide.none,
+                        border: alamat.isEmpty
+                            ? Border.all(color: Colors.red.shade200)
+                            : null,
+                      ),
+                      child: Row(
+                        children: [
+                          Icon(
+                            Icons.location_on,
+                            color: alamat.isEmpty
+                                ? Colors.red.shade400
+                                : const Color(0xFF6C8EF5),
+                            size: 22,
+                          ),
+                          const SizedBox(width: 12),
+                          Expanded(
+                            child: Text(
+                              alamat.isEmpty
+                                  ? 'Tap untuk atur lokasi di profil...'
+                                  : alamat,
+                              style: TextStyle(
+                                color: alamat.isEmpty
+                                    ? Colors.red.shade700
+                                    : Colors.black87,
+                                fontSize: 14,
+                                fontWeight: alamat.isEmpty
+                                    ? FontWeight.bold
+                                    : FontWeight.normal,
+                              ),
+                            ),
+                          ),
+                          const Icon(
+                            Icons.arrow_forward_ios,
+                            size: 14,
+                            color: Colors.black26,
+                          ),
+                        ],
                       ),
                     ),
                   ),
                   const SizedBox(height: 16),
+
                   const Align(
                     alignment: Alignment.centerLeft,
                     child: Text(
@@ -552,6 +592,8 @@ class _PostScreenState extends State<PostScreen> with WidgetsBindingObserver {
                     ],
                   ),
                   const SizedBox(height: 28),
+
+                  // Tombol Post
                   SizedBox(
                     width: double.infinity,
                     height: 55,
@@ -565,7 +607,14 @@ class _PostScreenState extends State<PostScreen> with WidgetsBindingObserver {
                       onPressed: isPosting ? null : submitPost,
                       child: isPosting
                           ? const CircularProgressIndicator(color: Colors.white)
-                          : const Text('Post', style: TextStyle(fontSize: 16)),
+                          : const Text(
+                              'Post',
+                              style: TextStyle(
+                                fontSize: 16,
+                                color: Colors.white,
+                                fontWeight: FontWeight.bold,
+                              ),
+                            ),
                     ),
                   ),
                 ],
