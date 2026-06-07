@@ -695,11 +695,13 @@ class _KomentarSheetState extends State<KomentarSheet> {
   final FirebaseFirestore firestore = FirebaseFirestore.instance;
   final FirebaseAuth auth = FirebaseAuth.instance;
   final TextEditingController _komentarController = TextEditingController();
+  final ScrollController _scrollController = ScrollController();
   bool _isSending = false;
 
   @override
   void dispose() {
     _komentarController.dispose();
+    _scrollController.dispose();
     super.dispose();
   }
 
