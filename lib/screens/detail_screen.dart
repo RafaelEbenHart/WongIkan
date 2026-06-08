@@ -189,7 +189,6 @@ class _DetailScreenState extends State<DetailScreen> {
 
     if (konfirmasi == true) {
       try {
-        // Hapus post
         await firestore.collection('ikan').doc(widget.ikanId).delete();
 
         if (context.mounted) {
@@ -214,7 +213,6 @@ class _DetailScreenState extends State<DetailScreen> {
               ),
             ),
           );
-          // Pop kembali ke profile dengan delay singkat
           await Future.delayed(const Duration(milliseconds: 200));
           if (context.mounted) {
             Navigator.of(context).popUntil((route) => route.isFirst);
@@ -270,7 +268,6 @@ class _DetailScreenState extends State<DetailScreen> {
     );
   }
 
-  // ── FETCH PERBANDINGAN HARGA ──
   Future<List<Map<String, dynamic>>> _fetchPerbandingan(
     String nama,
     String kategori,
@@ -311,7 +308,6 @@ class _DetailScreenState extends State<DetailScreen> {
     }
   }
 
-  // ── DEFAULT AVATAR ──
   Widget _defaultAvatar() {
     return Container(
       width: 52,
@@ -366,7 +362,6 @@ class _DetailScreenState extends State<DetailScreen> {
               ? (data['created_at'] as Timestamp).toDate()
               : DateTime.now();
 
-          // Parse lat/lng sekali untuk dipakai di beberapa tempat
           final double? parsedLat = latitude == null
               ? null
               : (latitude is num)
@@ -387,7 +382,6 @@ class _DetailScreenState extends State<DetailScreen> {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    // ── APP BAR ──
                     Padding(
                       padding: const EdgeInsets.symmetric(
                         horizontal: 16,
@@ -422,7 +416,6 @@ class _DetailScreenState extends State<DetailScreen> {
                               color: isDark ? Colors.white : Colors.black,
                             ),
                           ),
-                          // Tombol Share atau Delete (hanya untuk pemilik)
                           auth.currentUser?.uid == userId
                               ? GestureDetector(
                                   onTap: () =>
@@ -465,7 +458,6 @@ class _DetailScreenState extends State<DetailScreen> {
                       ),
                     ),
 
-                    // ── GAMBAR ──
                     GestureDetector(
                       onTap: () {
                         if (gambar.toString().isNotEmpty) {
@@ -516,7 +508,6 @@ class _DetailScreenState extends State<DetailScreen> {
 
                     const SizedBox(height: 16),
 
-                    // ── FAVORIT (Kanan) ──
                     Align(
                       alignment: Alignment.centerRight,
                       child: Padding(
@@ -623,14 +614,12 @@ class _DetailScreenState extends State<DetailScreen> {
                           ),
                           const SizedBox(height: 18),
 
-                          // ── INFO PENJUAL ──
                           StreamBuilder<DocumentSnapshot>(
                             stream: firestore
                                 .collection('users')
                                 .doc(userId)
                                 .snapshots(),
                             builder: (context, userSnapshot) {
-                              // Ambil username dan profile image terbaru dari user document
                               String displayUsername = username;
                               Uint8List? profileImageBytes;
 
@@ -747,7 +736,6 @@ class _DetailScreenState extends State<DetailScreen> {
 
                           const SizedBox(height: 20),
 
-                          // ── PERBANDINGAN HARGA INLINE ──
                           if (parsedLat != null && parsedLng != null)
                             FutureBuilder<List<Map<String, dynamic>>>(
                               future: _fetchPerbandingan(
@@ -786,7 +774,6 @@ class _DetailScreenState extends State<DetailScreen> {
                                         crossAxisAlignment:
                                             CrossAxisAlignment.start,
                                         children: [
-                                          // Header
                                           Row(
                                             children: [
                                               Container(
@@ -835,7 +822,6 @@ class _DetailScreenState extends State<DetailScreen> {
                                           const Divider(height: 1),
                                           const SizedBox(height: 14),
 
-                                          // Card per penjual
                                           ...tampil.map((item) {
                                             final hargaItem =
                                                 int.tryParse(
@@ -899,7 +885,6 @@ class _DetailScreenState extends State<DetailScreen> {
                                                 ),
                                                 child: Row(
                                                   children: [
-                                                    // Avatar / Foto
                                                     ClipRRect(
                                                       borderRadius:
                                                           BorderRadius.circular(
@@ -925,7 +910,6 @@ class _DetailScreenState extends State<DetailScreen> {
                                                           : _defaultAvatar(),
                                                     ),
                                                     const SizedBox(width: 12),
-                                                    // Info teks
                                                     Expanded(
                                                       child: Column(
                                                         crossAxisAlignment:
@@ -1010,7 +994,6 @@ class _DetailScreenState extends State<DetailScreen> {
                                             );
                                           }),
 
-                                          // Tombol lihat lainnya (hanya jika > 3)
                                           if (adaLebih) ...[
                                             const SizedBox(height: 4),
                                             GestureDetector(
@@ -1084,7 +1067,6 @@ class _DetailScreenState extends State<DetailScreen> {
                               },
                             ),
 
-                          // ── LOKASI ──
                           Container(
                             width: double.infinity,
                             padding: const EdgeInsets.all(16),
@@ -1166,10 +1148,12 @@ class _DetailScreenState extends State<DetailScreen> {
                                             children: [
                                               Text(
                                                 lokasiText,
-                                                style: const TextStyle(
+                                                style: TextStyle(
                                                   fontSize: 13,
                                                   fontWeight: FontWeight.w500,
-                                                  color: Colors.black87,
+                                                  color: isDark
+                                                      ? Colors.white
+                                                      : Colors.black87,
                                                 ),
                                                 maxLines: 1,
                                                 overflow: TextOverflow.ellipsis,
@@ -1205,21 +1189,33 @@ class _DetailScreenState extends State<DetailScreen> {
                               width: double.infinity,
                               padding: const EdgeInsets.all(16),
                               decoration: BoxDecoration(
-                                color: Colors.white,
+                                color: isDark
+                                    ? const Color(0xFF1E1E1E)
+                                    : Colors.white,
                                 borderRadius: BorderRadius.circular(20),
                               ),
                               child: Column(
                                 crossAxisAlignment: CrossAxisAlignment.start,
                                 children: [
-                                  const Text(
+                                  Text(
                                     "Deskripsi",
                                     style: TextStyle(
                                       fontWeight: FontWeight.bold,
                                       fontSize: 14,
+                                      color: isDark
+                                          ? Colors.white
+                                          : Colors.black,
                                     ),
                                   ),
                                   const SizedBox(height: 12),
-                                  Text(deskripsi),
+                                  Text(
+                                    deskripsi,
+                                    style: TextStyle(
+                                      color: isDark
+                                          ? Colors.grey.shade300
+                                          : Colors.black87,
+                                    ),
+                                  ),
                                 ],
                               ),
                             ),
@@ -1227,7 +1223,6 @@ class _DetailScreenState extends State<DetailScreen> {
                           if (deskripsi.toString().isNotEmpty)
                             const SizedBox(height: 20),
 
-                          // ── DIPOSTING ──
                           Container(
                             width: double.infinity,
                             padding: const EdgeInsets.all(16),
@@ -1278,7 +1273,6 @@ class _DetailScreenState extends State<DetailScreen> {
   }
 }
 
-// ── FULL IMAGE SCREEN ──
 class _FullImageScreen extends StatelessWidget {
   final String imageBase64;
   const _FullImageScreen({required this.imageBase64});
@@ -1299,7 +1293,6 @@ class _FullImageScreen extends StatelessWidget {
   }
 }
 
-// ── KOMENTAR SHEET ──
 class KomentarSheet extends StatefulWidget {
   final String ikanId;
 
@@ -1500,7 +1493,6 @@ class _KomentarSheetState extends State<KomentarSheet> {
                               child: Row(
                                 crossAxisAlignment: CrossAxisAlignment.start,
                                 children: [
-                                  // Fetch user profile image
                                   FutureBuilder<DocumentSnapshot>(
                                     future: firestore
                                         .collection('users')

@@ -239,7 +239,7 @@ class _TokoScreenState extends State<TokoScreen> {
           onPressed: () => Navigator.pop(context),
         ),
         title: Text(
-          "Toko",
+          "Info Penjual",
           style: TextStyle(
             color: isDark ? Colors.white : Colors.black,
             fontSize: 18,
