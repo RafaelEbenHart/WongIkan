@@ -8,7 +8,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:geolocator/geolocator.dart';
 import 'package:image_picker/image_picker.dart';
-import 'package:wongiwak/screens/settings_screen.dart'; // Sesuaikan path ini jika berbeda
+import 'package:wongiwak/screens/settings_screen.dart';
 
 import 'sign_in_screen.dart';
 
@@ -25,7 +25,10 @@ class _PostScreenState extends State<PostScreen> with WidgetsBindingObserver {
   final TextEditingController namaController = TextEditingController();
   final TextEditingController hargaController = TextEditingController();
   final TextEditingController deskripsiController = TextEditingController();
-  // lokasiController SUDAH DIHAPUS SEPENUHNYA
+
+  String? namaError;
+  String? hargaError;
+  String? deskripsiError;
 
   Uint8List? imageBytes;
   String? base64Image;
@@ -90,20 +93,14 @@ class _PostScreenState extends State<PostScreen> with WidgetsBindingObserver {
         final data = userData.data();
         setState(() {
           username = data?['username'] ?? 'User';
-          // Ambil dari 'location' (karena di ProfileScreen disimpannya dengan nama ini)
-          // Jika kosong, ambil dari 'alamat', jika masih kosong, set string kosong ''
           alamat = data?['location'] ?? data?['alamat'] ?? '';
           isLoading = false;
         });
       } else {
-        setState(() {
-          isLoading = false;
-        });
+        setState(() => isLoading = false);
       }
     } catch (e) {
-      setState(() {
-        isLoading = false;
-      });
+      setState(() => isLoading = false);
       debugPrint('Error mengambil data user: $e');
     }
   }
@@ -158,7 +155,6 @@ class _PostScreenState extends State<PostScreen> with WidgetsBindingObserver {
           accuracy: LocationAccuracy.high,
         ),
       );
-
       latitude = position.latitude;
       longitude = position.longitude;
     } catch (e) {
@@ -171,12 +167,10 @@ class _PostScreenState extends State<PostScreen> with WidgetsBindingObserver {
   }
 
   Future<void> pickImage() async {
-    // Kualitas gambar dikompres agar tidak menyebabkan invalid-argument di Firestore
     final pickedFile = await picker.pickImage(
       source: ImageSource.gallery,
       imageQuality: 25,
     );
-
     if (pickedFile != null) {
       final bytes = await pickedFile.readAsBytes();
       setState(() {
@@ -227,23 +221,61 @@ class _PostScreenState extends State<PostScreen> with WidgetsBindingObserver {
     );
   }
 
+  bool _validasi() {
+    final nama = namaController.text.trim();
+    final harga = hargaController.text.trim();
+    final deskripsi = deskripsiController.text.trim();
+
+    String? errNama;
+    String? errHarga;
+    String? errDeskripsi;
+
+    if (nama.isEmpty) {
+      errNama = 'Nama ikan tidak boleh kosong';
+    } else if (nama.length > 200) {
+      errNama = 'Nama ikan maksimal 200 karakter';
+    }
+
+    if (deskripsi.isEmpty) {
+      errDeskripsi = 'Detail ikan tidak boleh kosong';
+    } else if (deskripsi.length > 200) {
+      errDeskripsi = 'Detail ikan maksimal 200 karakter';
+    }
+
+    if (harga.isEmpty) {
+      errHarga = 'Harga tidak boleh kosong';
+    } else {
+      final hargaInt = int.tryParse(harga);
+      if (hargaInt == null || hargaInt < 0) {
+        errHarga = 'Harga tidak boleh minus';
+      } else if (hargaInt > 10000000) {
+        errHarga = 'Harga tidak boleh melebihi Rp 10.000.000';
+      }
+    }
+
+    setState(() {
+      namaError = errNama;
+      hargaError = errHarga;
+      deskripsiError = errDeskripsi;
+    });
+
+    return errNama == null && errHarga == null && errDeskripsi == null;
+  }
+
   Future<void> submitPost() async {
-    // Validasi lokasi langsung pakai variabel alamat
     if (alamat.isEmpty) {
       _tampilDialogAlamat();
       return;
     }
 
-    // Validasi controller text
-    if (imageBytes == null ||
-        namaController.text.isEmpty ||
-        hargaController.text.isEmpty ||
-        deskripsiController.text.isEmpty) {
-      ScaffoldMessenger.of(
-        context,
-      ).showSnackBar(const SnackBar(content: Text('Lengkapi semua data')));
+    if (imageBytes == null) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Pilih foto ikan terlebih dahulu')),
+      );
       return;
     }
+
+    if (!_validasi()) return;
 
     setState(() => isPosting = true);
 
@@ -254,7 +286,7 @@ class _PostScreenState extends State<PostScreen> with WidgetsBindingObserver {
         'nama': namaController.text.trim(),
         'harga': hargaController.text.trim(),
         'deskripsi': deskripsiController.text.trim(),
-        'lokasi': alamat, // Data lokasi diisi otomatis dari profil
+        'lokasi': alamat,
         'alamat': alamat,
         'kategori': selectedKategori,
         'gambar': base64Image,
@@ -267,7 +299,6 @@ class _PostScreenState extends State<PostScreen> with WidgetsBindingObserver {
 
       if (!mounted) return;
       Navigator.pop(context);
-
       ScaffoldMessenger.of(
         context,
       ).showSnackBar(const SnackBar(content: Text('Posting berhasil')));
@@ -278,6 +309,42 @@ class _PostScreenState extends State<PostScreen> with WidgetsBindingObserver {
     } finally {
       setState(() => isPosting = false);
     }
+  }
+
+  InputDecoration _inputDecoration({required String hint, String? errorText}) {
+    return InputDecoration(
+      hintText: hint,
+      errorText: errorText,
+      filled: true,
+      fillColor: errorText != null
+          ? Colors.red.shade50
+          : const Color(0xFFF4F6FF),
+      contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 18),
+      border: OutlineInputBorder(
+        borderRadius: BorderRadius.circular(16),
+        borderSide: BorderSide.none,
+      ),
+      enabledBorder: OutlineInputBorder(
+        borderRadius: BorderRadius.circular(16),
+        borderSide: errorText != null
+            ? BorderSide(color: Colors.red.shade300)
+            : BorderSide.none,
+      ),
+      focusedBorder: OutlineInputBorder(
+        borderRadius: BorderRadius.circular(16),
+        borderSide: errorText != null
+            ? BorderSide(color: Colors.red.shade400, width: 1.5)
+            : const BorderSide(color: Color(0xFF6C8EF5), width: 1.5),
+      ),
+      errorBorder: OutlineInputBorder(
+        borderRadius: BorderRadius.circular(16),
+        borderSide: BorderSide(color: Colors.red.shade300),
+      ),
+      focusedErrorBorder: OutlineInputBorder(
+        borderRadius: BorderRadius.circular(16),
+        borderSide: BorderSide(color: Colors.red.shade400, width: 1.5),
+      ),
+    );
   }
 
   @override
@@ -315,7 +382,6 @@ class _PostScreenState extends State<PostScreen> with WidgetsBindingObserver {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            // Bagian Header & Gambar
             Container(
               width: double.infinity,
               padding: const EdgeInsets.all(22),
@@ -362,10 +428,23 @@ class _PostScreenState extends State<PostScreen> with WidgetsBindingObserver {
                               ),
                             )
                           : const Center(
-                              child: Icon(
-                                Icons.add_a_photo,
-                                size: 48,
-                                color: Color(0xFF6C8EF5),
+                              child: Column(
+                                mainAxisSize: MainAxisSize.min,
+                                children: [
+                                  Icon(
+                                    Icons.add_a_photo,
+                                    size: 48,
+                                    color: Color(0xFF6C8EF5),
+                                  ),
+                                  SizedBox(height: 8),
+                                  Text(
+                                    'Tap untuk pilih foto',
+                                    style: TextStyle(
+                                      color: Color(0xFF6C8EF5),
+                                      fontSize: 13,
+                                    ),
+                                  ),
+                                ],
                               ),
                             ),
                     ),
@@ -394,8 +473,6 @@ class _PostScreenState extends State<PostScreen> with WidgetsBindingObserver {
               ),
             ),
             const SizedBox(height: 20),
-
-            // Bagian Detail Ikan
             Container(
               width: double.infinity,
               padding: const EdgeInsets.all(22),
@@ -411,89 +488,68 @@ class _PostScreenState extends State<PostScreen> with WidgetsBindingObserver {
                 ],
               ),
               child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  const Align(
-                    alignment: Alignment.centerLeft,
-                    child: Text(
-                      'Nama Ikan',
-                      style: TextStyle(
-                        fontWeight: FontWeight.bold,
-                        fontSize: 14,
-                      ),
-                    ),
+                  const Text(
+                    'Nama Ikan',
+                    style: TextStyle(fontWeight: FontWeight.bold, fontSize: 14),
+                  ),
+                  const SizedBox(height: 4),
+                  const Text(
+                    'Maks. 200 karakter',
+                    style: TextStyle(color: Colors.black38, fontSize: 11),
                   ),
                   const SizedBox(height: 8),
                   TextField(
                     controller: namaController,
-                    decoration: InputDecoration(
-                      hintText: 'Contoh: Iwak',
-                      filled: true,
-                      fillColor: const Color(0xFFF4F6FF),
-                      contentPadding: const EdgeInsets.symmetric(
-                        horizontal: 16,
-                        vertical: 18,
-                      ),
-                      border: OutlineInputBorder(
-                        borderRadius: BorderRadius.circular(16),
-                        borderSide: BorderSide.none,
-                      ),
-                    ),
+                    maxLength: 200,
+                    onChanged: (_) {
+                      if (namaError != null) setState(() => namaError = null);
+                    },
+                    decoration: _inputDecoration(
+                      hint: 'Contoh: Ikan Gurame',
+                      errorText: namaError,
+                    ).copyWith(counterText: ''),
                   ),
                   const SizedBox(height: 16),
-
-                  const Align(
-                    alignment: Alignment.centerLeft,
-                    child: Text(
-                      'Detail Ikan',
-                      style: TextStyle(
-                        fontWeight: FontWeight.bold,
-                        fontSize: 14,
-                      ),
-                    ),
+                  const Text(
+                    'Detail Ikan',
+                    style: TextStyle(fontWeight: FontWeight.bold, fontSize: 14),
+                  ),
+                  const SizedBox(height: 4),
+                  const Text(
+                    'Maks. 200 karakter',
+                    style: TextStyle(color: Colors.black38, fontSize: 11),
                   ),
                   const SizedBox(height: 8),
                   TextField(
                     controller: deskripsiController,
                     maxLines: 3,
-                    decoration: InputDecoration(
-                      hintText: 'Contoh: Ikan segar, ukuran besar, warna merah',
-                      filled: true,
-                      fillColor: const Color(0xFFF4F6FF),
-                      contentPadding: const EdgeInsets.symmetric(
-                        horizontal: 16,
-                        vertical: 18,
-                      ),
-                      border: OutlineInputBorder(
-                        borderRadius: BorderRadius.circular(16),
-                        borderSide: BorderSide.none,
-                      ),
-                    ),
+                    maxLength: 200,
+                    onChanged: (_) {
+                      if (deskripsiError != null) {
+                        setState(() => deskripsiError = null);
+                      }
+                    },
+                    decoration: _inputDecoration(
+                      hint: 'Contoh: Ikan segar, ukuran besar, warna merah',
+                      errorText: deskripsiError,
+                    ).copyWith(counterText: ''),
                   ),
                   const SizedBox(height: 16),
-
-                  // PERBAIKAN: Kotak Lokasi yang Bisa Dipencet (Clickable)
-                  const Align(
-                    alignment: Alignment.centerLeft,
-                    child: Text(
-                      'Lokasi',
-                      style: TextStyle(
-                        fontWeight: FontWeight.bold,
-                        fontSize: 14,
-                      ),
-                    ),
+                  const Text(
+                    'Lokasi',
+                    style: TextStyle(fontWeight: FontWeight.bold, fontSize: 14),
                   ),
                   const SizedBox(height: 8),
                   GestureDetector(
                     onTap: () {
-                      // Saat kotak dipencet, akan pindah ke SettingsScreen
                       Navigator.push(
                         context,
                         MaterialPageRoute(
                           builder: (_) => const SettingsScreen(),
                         ),
-                      ).then(
-                        (_) => getUserData(),
-                      ); // Otomatis refresh data saat kembali
+                      ).then((_) => getUserData());
                     },
                     child: Container(
                       padding: const EdgeInsets.symmetric(
@@ -545,19 +601,18 @@ class _PostScreenState extends State<PostScreen> with WidgetsBindingObserver {
                     ),
                   ),
                   const SizedBox(height: 16),
-
-                  const Align(
-                    alignment: Alignment.centerLeft,
-                    child: Text(
-                      'Harga Ikan',
-                      style: TextStyle(
-                        fontWeight: FontWeight.bold,
-                        fontSize: 14,
-                      ),
-                    ),
+                  const Text(
+                    'Harga Ikan',
+                    style: TextStyle(fontWeight: FontWeight.bold, fontSize: 14),
+                  ),
+                  const SizedBox(height: 4),
+                  const Text(
+                    'Maks. Rp 10.000.000 · tidak boleh minus',
+                    style: TextStyle(color: Colors.black38, fontSize: 11),
                   ),
                   const SizedBox(height: 8),
                   Row(
+                    crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       Expanded(
                         child: TextField(
@@ -566,34 +621,31 @@ class _PostScreenState extends State<PostScreen> with WidgetsBindingObserver {
                           inputFormatters: [
                             FilteringTextInputFormatter.digitsOnly,
                           ],
-                          decoration: InputDecoration(
-                            hintText: 'Rp 00',
-                            filled: true,
-                            fillColor: const Color(0xFFF4F6FF),
-                            contentPadding: const EdgeInsets.symmetric(
-                              horizontal: 16,
-                              vertical: 18,
-                            ),
-                            border: OutlineInputBorder(
-                              borderRadius: BorderRadius.circular(16),
-                              borderSide: BorderSide.none,
-                            ),
+                          onChanged: (_) {
+                            if (hargaError != null) {
+                              setState(() => hargaError = null);
+                            }
+                          },
+                          decoration: _inputDecoration(
+                            hint: 'Rp 00',
+                            errorText: hargaError,
                           ),
                         ),
                       ),
                       const SizedBox(width: 10),
-                      const Text(
-                        '/ Kg',
-                        style: TextStyle(
-                          fontSize: 16,
-                          fontWeight: FontWeight.bold,
+                      const Padding(
+                        padding: EdgeInsets.only(top: 18),
+                        child: Text(
+                          '/ Kg',
+                          style: TextStyle(
+                            fontSize: 16,
+                            fontWeight: FontWeight.bold,
+                          ),
                         ),
                       ),
                     ],
                   ),
                   const SizedBox(height: 28),
-
-                  // Tombol Post
                   SizedBox(
                     width: double.infinity,
                     height: 55,
