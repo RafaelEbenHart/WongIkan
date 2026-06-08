@@ -10,6 +10,7 @@ import 'detail/langganan.dart';
 import 'detail/terdekat.dart';
 import 'post_screen.dart';
 import 'error/login.dart';
+import 'profile_screen.dart';
 
 class HomeScreen extends StatefulWidget {
   const HomeScreen({super.key});
@@ -61,13 +62,21 @@ class _HomeScreenState extends State<HomeScreen> {
         actions: [
           Padding(
             padding: const EdgeInsets.only(right: 16),
-            child: CircleAvatar(
-              radius: 19,
-              backgroundColor: const Color(0xFFEEF3FF),
-              child: const Icon(
-                Icons.person_rounded,
-                color: Color(0xFF6C8EF5),
-                size: 20,
+            child: GestureDetector(
+              onTap: () {
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(builder: (_) => const ProfileScreen()),
+                );
+              },
+              child: CircleAvatar(
+                radius: 19,
+                backgroundColor: const Color(0xFFEEF3FF),
+                child: const Icon(
+                  Icons.person_rounded,
+                  color: Color(0xFF6C8EF5),
+                  size: 20,
+                ),
               ),
             ),
           ),
@@ -101,7 +110,7 @@ class _HomeScreenState extends State<HomeScreen> {
               const SizedBox(height: 4),
 
               CarouselWidget(
-                images: [
+                images: const [
                   'assets/images/Carousel1.png',
                   'assets/images/Carousel2.png',
                   'assets/images/Carousel3.png',
@@ -274,11 +283,6 @@ class _HomeScreenState extends State<HomeScreen> {
                     );
                   }
 
-                  // Section Disarankan: 2 item pertama
-                  final disarankanItems = filteredData.length >= 2
-                      ? filteredData.sublist(0, 2)
-                      : filteredData;
-
                   // Section Terdekat: item ke-5 dan seterusnya
                   final terdekatItems = filteredData.length > 4
                       ? filteredData.sublist(4)
@@ -289,7 +293,6 @@ class _HomeScreenState extends State<HomeScreen> {
                     children: [
                       MoreSectionWidget(
                         title: 'Disarankan',
-                        // Kirim semua filteredData agar "Lihat Semua" punya konteks penuh
                         items: filteredData,
                         detailBuilder: (id) => DetailScreen(ikanId: id),
                         onSeeMore: () => Navigator.push(
@@ -301,74 +304,77 @@ class _HomeScreenState extends State<HomeScreen> {
                         ),
                       ),
 
-                      StreamBuilder<QuerySnapshot>(
-                        stream: FirebaseFirestore.instance
-                            .collection('users')
-                            .doc(FirebaseAuth.instance.currentUser!.uid)
-                            .collection('langganan')
-                            .snapshots(),
-                        builder: (context, subSnapshot) {
-                          if (subSnapshot.connectionState ==
-                              ConnectionState.waiting) {
-                            return const Padding(
-                              padding: EdgeInsets.symmetric(vertical: 20),
-                              child: Center(
-                                child: CircularProgressIndicator(
-                                  color: Color(0xFF6C8EF5),
+                      // 🌟 PROTEKSI DISINI: StreamBuilder Langganan hanya di-render jika User tidak null (sudah login)
+                      if (FirebaseAuth.instance.currentUser != null)
+                        StreamBuilder<QuerySnapshot>(
+                          stream: FirebaseFirestore.instance
+                              .collection('users')
+                              .doc(FirebaseAuth.instance.currentUser!.uid)
+                              .collection('langganan')
+                              .snapshots(),
+                          builder: (context, subSnapshot) {
+                            if (subSnapshot.connectionState ==
+                                ConnectionState.waiting) {
+                              return const Padding(
+                                padding: EdgeInsets.symmetric(vertical: 20),
+                                child: Center(
+                                  child: CircularProgressIndicator(
+                                    color: Color(0xFF6C8EF5),
+                                  ),
+                                ),
+                              );
+                            }
+
+                            if (!subSnapshot.hasData ||
+                                subSnapshot.data!.docs.isEmpty) {
+                              return const SizedBox.shrink();
+                            }
+
+                            final subscribedUsernames = subSnapshot.data!.docs
+                                .map((doc) => doc['username'] as String)
+                                .toList();
+
+                            final shouldLimitItems =
+                                subscribedUsernames.length > 4;
+                            final itemsPerUser = shouldLimitItems ? 2 : 999;
+
+                            final Map<String, List<QueryDocumentSnapshot>>
+                            productsByUser = {};
+                            for (final username in subscribedUsernames) {
+                              productsByUser[username] = filteredData
+                                  .where((doc) {
+                                    final ikan =
+                                        doc.data() as Map<String, dynamic>;
+                                    return ikan['username']?.toString() ==
+                                        username;
+                                  })
+                                  .take(itemsPerUser)
+                                  .toList();
+                            }
+
+                            final subscribedProducts = productsByUser.values
+                                .expand((list) => list)
+                                .toList();
+
+                            if (subscribedProducts.isEmpty) {
+                              return const SizedBox.shrink();
+                            }
+
+                            return MoreSectionWidget(
+                              title: 'Langganan',
+                              items: subscribedProducts,
+                              detailBuilder: (id) => DetailScreen(ikanId: id),
+                              onSeeMore: () => Navigator.push(
+                                context,
+                                MaterialPageRoute(
+                                  builder: (_) => LanggananScreen(
+                                    items: subscribedProducts,
+                                  ),
                                 ),
                               ),
                             );
-                          }
-
-                          if (!subSnapshot.hasData ||
-                              subSnapshot.data!.docs.isEmpty) {
-                            return const SizedBox.shrink();
-                          }
-
-                          final subscribedUsernames = subSnapshot.data!.docs
-                              .map((doc) => doc['username'] as String)
-                              .toList();
-
-                          final shouldLimitItems =
-                              subscribedUsernames.length > 4;
-                          final itemsPerUser = shouldLimitItems ? 2 : 999;
-
-                          final Map<String, List<QueryDocumentSnapshot>>
-                          productsByUser = {};
-                          for (final username in subscribedUsernames) {
-                            productsByUser[username] = filteredData
-                                .where((doc) {
-                                  final ikan =
-                                      doc.data() as Map<String, dynamic>;
-                                  return ikan['username']?.toString() ==
-                                      username;
-                                })
-                                .take(itemsPerUser)
-                                .toList();
-                          }
-
-                          final subscribedProducts = productsByUser.values
-                              .expand((list) => list)
-                              .toList();
-
-                          if (subscribedProducts.isEmpty) {
-                            return const SizedBox.shrink();
-                          }
-
-                          return MoreSectionWidget(
-                            title: 'Langganan',
-                            items: subscribedProducts,
-                            detailBuilder: (id) => DetailScreen(ikanId: id),
-                            onSeeMore: () => Navigator.push(
-                              context,
-                              MaterialPageRoute(
-                                builder: (_) =>
-                                    LanggananScreen(items: subscribedProducts),
-                              ),
-                            ),
-                          );
-                        },
-                      ),
+                          },
+                        ),
 
                       if (terdekatItems.isNotEmpty)
                         MoreSectionWidget(

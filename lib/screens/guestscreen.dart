@@ -1,11 +1,9 @@
 import 'dart:convert';
-
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
-
+import 'package:wongiwak/screens/sign_in_screen.dart';
 import '../widgets/carousel.dart';
 import 'detail_screen.dart';
-import 'error/login.dart';
 
 class GuestScreen extends StatefulWidget {
   const GuestScreen({super.key});
@@ -36,6 +34,13 @@ class _GuestScreenState extends State<GuestScreen> {
     super.dispose();
   }
 
+  void _tampilDialogLogin() {
+    Navigator.push(
+      context,
+      MaterialPageRoute(builder: (_) => const SignInScreen()),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -54,14 +59,10 @@ class _GuestScreenState extends State<GuestScreen> {
           ),
         ),
         actions: [
-          // Tombol login di AppBar
           Padding(
             padding: const EdgeInsets.only(right: 16),
             child: GestureDetector(
-              onTap: () => Navigator.push(
-                context,
-                MaterialPageRoute(builder: (_) => const LoginErrorScreen()),
-              ),
+              onTap: _tampilDialogLogin,
               child: Container(
                 padding: const EdgeInsets.symmetric(
                   horizontal: 14,
@@ -102,88 +103,12 @@ class _GuestScreenState extends State<GuestScreen> {
               const SizedBox(height: 4),
 
               CarouselWidget(
-                images: [
+                images: const [
                   'assets/images/Carousel1.png',
                   'assets/images/Carousel2.png',
                   'assets/images/Carousel3.png',
                 ],
                 height: 180,
-              ),
-              const SizedBox(height: 16),
-
-              GestureDetector(
-                onTap: () => Navigator.push(
-                  context,
-                  MaterialPageRoute(builder: (_) => const LoginErrorScreen()),
-                ),
-                child: Container(
-                  width: double.infinity,
-                  padding: const EdgeInsets.symmetric(
-                    horizontal: 16,
-                    vertical: 13,
-                  ),
-                  decoration: BoxDecoration(
-                    gradient: const LinearGradient(
-                      colors: [Color(0xFF6C8EF5), Color(0xFF8FA8FF)],
-                      begin: Alignment.centerLeft,
-                      end: Alignment.centerRight,
-                    ),
-                    borderRadius: BorderRadius.circular(14),
-                    boxShadow: [
-                      BoxShadow(
-                        color: const Color(0xFF6C8EF5).withOpacity(0.3),
-                        blurRadius: 12,
-                        offset: const Offset(0, 4),
-                      ),
-                    ],
-                  ),
-                  child: Row(
-                    children: [
-                      Container(
-                        width: 38,
-                        height: 38,
-                        decoration: BoxDecoration(
-                          color: Colors.white.withOpacity(0.2),
-                          shape: BoxShape.circle,
-                        ),
-                        child: const Icon(
-                          Icons.lock_open_rounded,
-                          color: Colors.white,
-                          size: 20,
-                        ),
-                      ),
-                      const SizedBox(width: 12),
-                      const Expanded(
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            Text(
-                              'Login untuk fitur lengkap',
-                              style: TextStyle(
-                                color: Colors.white,
-                                fontSize: 13,
-                                fontWeight: FontWeight.w700,
-                              ),
-                            ),
-                            SizedBox(height: 2),
-                            Text(
-                              'Akses Langganan, Terdekat & jual ikan',
-                              style: TextStyle(
-                                color: Colors.white70,
-                                fontSize: 11,
-                              ),
-                            ),
-                          ],
-                        ),
-                      ),
-                      const Icon(
-                        Icons.arrow_forward_ios_rounded,
-                        color: Colors.white70,
-                        size: 14,
-                      ),
-                    ],
-                  ),
-                ),
               ),
               const SizedBox(height: 16),
 
@@ -205,11 +130,8 @@ class _GuestScreenState extends State<GuestScreen> {
                 ),
                 child: TextField(
                   controller: searchController,
-                  onChanged: (value) {
-                    setState(() {
-                      searchQuery = value.toLowerCase();
-                    });
-                  },
+                  onChanged: (value) =>
+                      setState(() => searchQuery = value.toLowerCase()),
                   style: const TextStyle(
                     fontSize: 14,
                     color: Color(0xFF1A1A2E),
@@ -232,7 +154,6 @@ class _GuestScreenState extends State<GuestScreen> {
               ),
               const SizedBox(height: 14),
 
-              // ── Category Chips ────────────────────────────
               SizedBox(
                 height: 36,
                 child: ListView.separated(
@@ -291,8 +212,6 @@ class _GuestScreenState extends State<GuestScreen> {
                 ),
               ),
               const SizedBox(height: 20),
-
-              // ── Header Section Disarankan ─────────────────
               const Text(
                 'Disarankan',
                 style: TextStyle(
@@ -304,13 +223,24 @@ class _GuestScreenState extends State<GuestScreen> {
               ),
               const SizedBox(height: 12),
 
-              // ── Stream: Vertical Grid ─────────────────────
               StreamBuilder<QuerySnapshot>(
                 stream: FirebaseFirestore.instance
                     .collection('ikan')
                     .orderBy('created_at', descending: true)
                     .snapshots(),
                 builder: (context, snapshot) {
+                  if (snapshot.hasError) {
+                    return const Center(
+                      child: Padding(
+                        padding: EdgeInsets.all(40),
+                        child: Text(
+                          'Terjadi kesalahan saat memuat data',
+                          style: TextStyle(color: Colors.red),
+                        ),
+                      ),
+                    );
+                  }
+
                   if (snapshot.connectionState == ConnectionState.waiting) {
                     return const Center(
                       child: Padding(
@@ -322,7 +252,9 @@ class _GuestScreenState extends State<GuestScreen> {
                     );
                   }
 
-                  if (!snapshot.hasData || snapshot.data!.docs.isEmpty) {
+                  final allData = snapshot.data?.docs ?? [];
+
+                  if (allData.isEmpty) {
                     return const Center(
                       child: Padding(
                         padding: EdgeInsets.all(40),
@@ -334,10 +266,8 @@ class _GuestScreenState extends State<GuestScreen> {
                     );
                   }
 
-                  final allData = snapshot.data!.docs;
-
                   final filteredData = allData.where((doc) {
-                    final ikan = doc.data() as Map<String, dynamic>;
+                    final ikan = doc.data() as Map<String, dynamic>? ?? {};
                     final nama = (ikan['nama']?.toString() ?? '').toLowerCase();
                     final kategori = (ikan['kategori']?.toString() ?? '')
                         .toLowerCase();
@@ -366,23 +296,19 @@ class _GuestScreenState extends State<GuestScreen> {
                     );
                   }
 
-                  // Vertical Grid - semua item, bisa scroll ke bawah
-                  return GridView.builder(
-                    shrinkWrap: true,
-                    physics: const NeverScrollableScrollPhysics(),
-                    gridDelegate:
-                        const SliverGridDelegateWithFixedCrossAxisCount(
-                          crossAxisCount: 2,
-                          mainAxisSpacing: 14,
-                          crossAxisSpacing: 12,
-                          childAspectRatio: 0.82,
-                        ),
-                    itemCount: filteredData.length,
-                    itemBuilder: (context, index) {
-                      final doc = filteredData[index];
-                      final ikan = doc.data() as Map<String, dynamic>;
-                      return _GuestFishCard(doc: doc, ikan: ikan);
-                    },
+                  final screenWidth = MediaQuery.of(context).size.width;
+                  final cardWidth = (screenWidth - 32 - 10) / 2;
+
+                  return Wrap(
+                    spacing: 10,
+                    runSpacing: 12,
+                    children: filteredData.map((doc) {
+                      final ikan = doc.data() as Map<String, dynamic>? ?? {};
+                      return SizedBox(
+                        width: cardWidth,
+                        child: _GuestFishCard(doc: doc, ikan: ikan),
+                      );
+                    }).toList(),
                   );
                 },
               ),
@@ -400,13 +326,21 @@ class _GuestFishCard extends StatelessWidget {
   final QueryDocumentSnapshot doc;
   final Map<String, dynamic> ikan;
 
-  const _GuestFishCard({super.key, required this.doc, required this.ikan});
+  const _GuestFishCard({required this.doc, required this.ikan});
+
+  Widget _placeholder() => Container(
+    color: const Color(0xFFEEF3FF),
+    child: const Center(
+      child: Icon(Icons.set_meal_rounded, size: 38, color: Color(0xFF6C8EF5)),
+    ),
+  );
 
   @override
   Widget build(BuildContext context) {
     final lokasiText = ikan['lokasi']?.toString() ?? '-';
     final harga = ikan['harga']?.toString() ?? '0';
-    final nama = ikan['nama']?.toString() ?? '-';
+    final nama = ikan['nama']?.toString() ?? 'Tanpa Nama';
+    final gambarString = ikan['gambar']?.toString() ?? '';
 
     return GestureDetector(
       onTap: () => Navigator.push(
@@ -417,18 +351,19 @@ class _GuestFishCard extends StatelessWidget {
         decoration: BoxDecoration(
           color: Colors.white,
           borderRadius: BorderRadius.circular(14),
+          // Shadow identik dengan _FishCard di more.dart
           boxShadow: [
             BoxShadow(
-              color: const Color(0xFF6C8EF5).withOpacity(0.08),
-              blurRadius: 12,
+              color: const Color(0xFF6C8EF5).withOpacity(0.10),
+              blurRadius: 14,
               offset: const Offset(0, 4),
             ),
           ],
         ),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
+          mainAxisSize: MainAxisSize.min,
           children: [
-            // Gambar
             ClipRRect(
               borderRadius: const BorderRadius.only(
                 topLeft: Radius.circular(14),
@@ -436,19 +371,17 @@ class _GuestFishCard extends StatelessWidget {
               ),
               child: SizedBox(
                 width: double.infinity,
-                height: 110,
-                child:
-                    ikan['gambar'] != null &&
-                        ikan['gambar'].toString().isNotEmpty
+                height: 112,
+                child: gambarString.isNotEmpty
                     ? Image.memory(
-                        base64Decode(ikan['gambar']),
+                        base64Decode(gambarString),
                         fit: BoxFit.cover,
                         errorBuilder: (_, __, ___) => _placeholder(),
                       )
                     : _placeholder(),
               ),
             ),
-            // Info
+
             Padding(
               padding: const EdgeInsets.fromLTRB(10, 8, 10, 10),
               child: Column(
@@ -505,11 +438,4 @@ class _GuestFishCard extends StatelessWidget {
       ),
     );
   }
-
-  Widget _placeholder() => Container(
-    color: const Color(0xFFEEF3FF),
-    child: const Center(
-      child: Icon(Icons.set_meal_rounded, size: 36, color: Color(0xFF6C8EF5)),
-    ),
-  );
 }

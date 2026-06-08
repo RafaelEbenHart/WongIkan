@@ -21,7 +21,7 @@ class LoginErrorScreen extends StatelessWidget {
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
               const Text(
-                'Kamu Belum Bisa posting, ',
+                'Kamu belum login,',
                 textAlign: TextAlign.center,
                 style: TextStyle(
                   fontSize: 16,

@@ -10,8 +10,14 @@ import 'package:wongiwak/screens/sign_in_screen.dart';
 class TokoScreen extends StatefulWidget {
   final String username;
   final String alamat;
+  final String userId;
 
-  const TokoScreen({super.key, required this.username, required this.alamat});
+  const TokoScreen({
+    super.key,
+    required this.username,
+    required this.alamat,
+    required this.userId,
+  });
 
   @override
   State<TokoScreen> createState() => _TokoScreenState();
@@ -23,6 +29,7 @@ class _TokoScreenState extends State<TokoScreen> {
 
   bool _isSubscribed = false;
   bool _isLoadingSub = false;
+  bool _isOwner = false;
 
   final List<String> kategoriOptions = [
     'Semua',
@@ -39,27 +46,52 @@ class _TokoScreenState extends State<TokoScreen> {
   @override
   void initState() {
     super.initState();
-    _cekSubscription();
+    _cekOwnerDanSubscription();
   }
 
-  Future<void> _cekSubscription() async {
+  Future<void> _cekOwnerDanSubscription() async {
     final user = auth.currentUser;
     if (user == null) return;
 
-    final doc = await firestore
+    try {
+      final myDoc = await firestore.collection('users').doc(user.uid).get();
+      if (myDoc.exists) {
+        final myData = myDoc.data() as Map<String, dynamic>;
+        final myUsername = myData['username'] ?? '';
+
+        if (mounted) {
+          setState(() {
+            _isOwner = (myUsername == widget.username);
+          });
+        }
+      }
+    } catch (e) {
+      debugPrint("Gagal mengecek owner: $e");
+    }
+
+    final subDoc = await firestore
         .collection('users')
         .doc(user.uid)
         .collection('langganan')
         .doc(widget.username)
         .get();
 
-    if (mounted) setState(() => _isSubscribed = doc.exists);
+    if (mounted) setState(() => _isSubscribed = subDoc.exists);
   }
 
   Future<void> _toggleSubscription() async {
     final user = auth.currentUser;
     if (user == null) {
       _tampilDialogLogin();
+      return;
+    }
+
+    if (_isOwner) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Kamu tidak bisa mengikuti tokomu sendiri.'),
+        ),
+      );
       return;
     }
 
@@ -73,14 +105,59 @@ class _TokoScreenState extends State<TokoScreen> {
 
     try {
       if (_isSubscribed) {
+        // Unfollow: hapus dari following user & kurangi followers seller
         await ref.delete();
+
+        // Kurangi followers seller
+        final sellerRef = firestore
+            .collection('users')
+            .where('username', isEqualTo: widget.username);
+        final sellerDocs = await sellerRef.get();
+        if (sellerDocs.docs.isNotEmpty) {
+          final sellerId = sellerDocs.docs.first.id;
+          await firestore.collection('users').doc(sellerId).update({
+            'followers': FieldValue.increment(-1),
+          });
+          // Hapus dari followers collection seller
+          await firestore
+              .collection('users')
+              .doc(sellerId)
+              .collection('followers')
+              .doc(user.uid)
+              .delete();
+        }
+
         setState(() => _isSubscribed = false);
       } else {
+        // Follow: tambah ke following user & tambah followers seller
         await ref.set({
           'username': widget.username,
           'alamat': widget.alamat,
           'created_at': FieldValue.serverTimestamp(),
         });
+
+        // Tambah followers seller
+        final sellerRef = firestore
+            .collection('users')
+            .where('username', isEqualTo: widget.username);
+        final sellerDocs = await sellerRef.get();
+        if (sellerDocs.docs.isNotEmpty) {
+          final sellerId = sellerDocs.docs.first.id;
+          await firestore.collection('users').doc(sellerId).update({
+            'followers': FieldValue.increment(1),
+          });
+          // Tambah ke followers collection seller
+          await firestore
+              .collection('users')
+              .doc(sellerId)
+              .collection('followers')
+              .doc(user.uid)
+              .set({
+                'uid': user.uid,
+                'created_at': FieldValue.serverTimestamp(),
+              });
+        }
+
         setState(() => _isSubscribed = true);
       }
     } catch (e) {
@@ -228,54 +305,53 @@ class _TokoScreenState extends State<TokoScreen> {
                     ),
                   ),
                   const SizedBox(width: 10),
-
-                  GestureDetector(
-                    onTap: _toggleSubscription,
-                    child: AnimatedContainer(
-                      duration: const Duration(milliseconds: 300),
-                      padding: const EdgeInsets.symmetric(
-                        horizontal: 16,
-                        vertical: 8,
-                      ),
-                      decoration: BoxDecoration(
-                        color: _isSubscribed
-                            ? Colors.grey.shade200
-                            : const Color(0xff6C8EF5),
-                        borderRadius: BorderRadius.circular(20),
-                        border: _isSubscribed
-                            ? Border.all(color: Colors.grey.shade300)
-                            : null,
-                      ),
-                      child: _isLoadingSub
-                          ? const SizedBox(
-                              width: 16,
-                              height: 16,
-                              child: CircularProgressIndicator(
-                                strokeWidth: 2,
-                                color: Colors.white,
+                  if (!_isOwner)
+                    GestureDetector(
+                      onTap: _toggleSubscription,
+                      child: AnimatedContainer(
+                        duration: const Duration(milliseconds: 300),
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 16,
+                          vertical: 8,
+                        ),
+                        decoration: BoxDecoration(
+                          color: _isSubscribed
+                              ? Colors.grey.shade200
+                              : const Color(0xff6C8EF5),
+                          borderRadius: BorderRadius.circular(20),
+                          border: _isSubscribed
+                              ? Border.all(color: Colors.grey.shade300)
+                              : null,
+                        ),
+                        child: _isLoadingSub
+                            ? const SizedBox(
+                                width: 16,
+                                height: 16,
+                                child: CircularProgressIndicator(
+                                  strokeWidth: 2,
+                                  color: Colors.white,
+                                ),
+                              )
+                            : Text(
+                                _isSubscribed ? "Diikuti" : "Ikuti",
+                                style: TextStyle(
+                                  color: _isSubscribed
+                                      ? Colors.black87
+                                      : Colors.white,
+                                  fontWeight: FontWeight.bold,
+                                  fontSize: 13,
+                                ),
                               ),
-                            )
-                          : Text(
-                              _isSubscribed ? "Diikuti" : "Ikuti",
-                              style: TextStyle(
-                                color: _isSubscribed
-                                    ? Colors.black87
-                                    : Colors.white,
-                                fontWeight: FontWeight.bold,
-                                fontSize: 13,
-                              ),
-                            ),
+                      ),
                     ),
-                  ),
                 ],
               ),
             ),
-
             Expanded(
               child: StreamBuilder<QuerySnapshot>(
                 stream: FirebaseFirestore.instance
                     .collection('ikan')
-                    .where('username', isEqualTo: widget.username)
+                    .where('userId', isEqualTo: widget.userId)
                     .snapshots(),
                 builder: (context, snapshot) {
                   if (snapshot.connectionState == ConnectionState.waiting) {
@@ -284,7 +360,6 @@ class _TokoScreenState extends State<TokoScreen> {
 
                   final produk = snapshot.data?.docs ?? [];
 
-                  // Filter produk berdasarkan kategori yang dipilih
                   final filteredProduk = produk.where((doc) {
                     final item = doc.data() as Map<String, dynamic>;
                     final kategori = (item['kategori']?.toString() ?? '')
@@ -295,7 +370,6 @@ class _TokoScreenState extends State<TokoScreen> {
 
                   return Column(
                     children: [
-                      // Filter kategori
                       SizedBox(
                         height: 42,
                         child: ListView.separated(
@@ -309,9 +383,7 @@ class _TokoScreenState extends State<TokoScreen> {
                             final bool active = category == selectedCategory;
                             return GestureDetector(
                               onTap: () {
-                                setState(() {
-                                  selectedCategory = category;
-                                });
+                                setState(() => selectedCategory = category);
                               },
                               child: Container(
                                 padding: const EdgeInsets.symmetric(
@@ -346,9 +418,8 @@ class _TokoScreenState extends State<TokoScreen> {
                         ),
                       ),
                       const SizedBox(height: 16),
-
                       Padding(
-                        padding: const EdgeInsets.symmetric(horizontal: 16.0),
+                        padding: const EdgeInsets.symmetric(horizontal: 16),
                         child: Row(
                           children: [
                             const Text(
@@ -383,7 +454,6 @@ class _TokoScreenState extends State<TokoScreen> {
                         ),
                       ),
                       const SizedBox(height: 16),
-
                       Expanded(
                         child: filteredProduk.isEmpty
                             ? Center(
@@ -477,7 +547,7 @@ class _TokoScreenState extends State<TokoScreen> {
                                             ),
                                           ),
                                           Padding(
-                                            padding: const EdgeInsets.all(10.0),
+                                            padding: const EdgeInsets.all(10),
                                             child: Column(
                                               crossAxisAlignment:
                                                   CrossAxisAlignment.start,
