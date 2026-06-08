@@ -14,7 +14,6 @@ class SignUpScreen extends StatefulWidget {
 
 class _SignUpScreenState extends State<SignUpScreen> {
   final _usernameController = TextEditingController();
-  final _alamatController = TextEditingController();
   final _emailController = TextEditingController();
   final _passwordController = TextEditingController();
   final _confirmPasswordController = TextEditingController();
@@ -26,18 +25,13 @@ class _SignUpScreenState extends State<SignUpScreen> {
   bool _isConfirmPasswordVisible = false;
 
   void _signUp() async {
-    if (!_formKey.currentState!.validate()) {
-      return;
-    }
+    if (!_formKey.currentState!.validate()) return;
 
     final username = _usernameController.text.trim();
-    final alamat = _alamatController.text.trim();
     final email = _emailController.text.trim();
     final password = _passwordController.text;
 
-    setState(() {
-      _isLoading = true;
-    });
+    setState(() => _isLoading = true);
 
     try {
       UserCredential userCredential = await FirebaseAuth.instance
@@ -48,7 +42,7 @@ class _SignUpScreenState extends State<SignUpScreen> {
           .doc(userCredential.user!.uid)
           .set({
             'username': username,
-            'alamat': alamat,
+            'alamat': '',
             'email': email,
             'created_at': Timestamp.now(),
           });
@@ -62,9 +56,7 @@ class _SignUpScreenState extends State<SignUpScreen> {
     } catch (error) {
       _showSnackBar('Terjadi kesalahan');
     } finally {
-      setState(() {
-        _isLoading = false;
-      });
+      setState(() => _isLoading = false);
     }
   }
 
@@ -75,10 +67,9 @@ class _SignUpScreenState extends State<SignUpScreen> {
   }
 
   bool _isValidEmail(String email) {
-    String emailRegex =
-        r"^[a-zA-Z0-9.!#$%&'*+/=?^_`{|}~-]+@[a-zA-Z0-9-]+(?:\.[a-zA-Z0-9-]+)*$";
-
-    return RegExp(emailRegex).hasMatch(email);
+    return RegExp(
+      r"^[a-zA-Z0-9.!#$%&'*+/=?^_`{|}~-]+@[a-zA-Z0-9-]+(?:\.[a-zA-Z0-9-]+)*$",
+    ).hasMatch(email);
   }
 
   String _getAuthErrorMessage(String code) {
@@ -106,7 +97,6 @@ class _SignUpScreenState extends State<SignUpScreen> {
               crossAxisAlignment: CrossAxisAlignment.stretch,
               children: [
                 const SizedBox(height: 24),
-
                 Text(
                   'Daftar',
                   textAlign: TextAlign.center,
@@ -114,9 +104,7 @@ class _SignUpScreenState extends State<SignUpScreen> {
                     fontWeight: FontWeight.bold,
                   ),
                 ),
-
                 const SizedBox(height: 8),
-
                 Text(
                   'Buat akun baru',
                   textAlign: TextAlign.center,
@@ -124,9 +112,7 @@ class _SignUpScreenState extends State<SignUpScreen> {
                     context,
                   ).textTheme.bodyMedium?.copyWith(color: Colors.grey[600]),
                 ),
-
                 const SizedBox(height: 32),
-
                 Container(
                   padding: const EdgeInsets.all(24),
                   decoration: BoxDecoration(
@@ -140,7 +126,6 @@ class _SignUpScreenState extends State<SignUpScreen> {
                       ),
                     ],
                   ),
-
                   child: Form(
                     key: _formKey,
                     child: Column(
@@ -172,47 +157,10 @@ class _SignUpScreenState extends State<SignUpScreen> {
                             if (value == null || value.isEmpty) {
                               return 'Masukkan username';
                             }
-
                             return null;
                           },
                         ),
-
                         const SizedBox(height: 16),
-
-                        TextFormField(
-                          controller: _alamatController,
-                          decoration: InputDecoration(
-                            filled: true,
-                            fillColor: const Color(0xFFF8F9FC),
-                            labelText: 'Alamat',
-                            prefixIcon: const Icon(
-                              Icons.location_on,
-                              color: Colors.grey,
-                            ),
-                            enabledBorder: OutlineInputBorder(
-                              borderRadius: BorderRadius.circular(16),
-                              borderSide: BorderSide(
-                                color: Colors.grey.shade200,
-                              ),
-                            ),
-                            focusedBorder: OutlineInputBorder(
-                              borderRadius: BorderRadius.circular(16),
-                              borderSide: BorderSide(
-                                color: Theme.of(context).colorScheme.primary,
-                              ),
-                            ),
-                          ),
-                          validator: (value) {
-                            if (value == null || value.isEmpty) {
-                              return 'Masukkan alamat';
-                            }
-
-                            return null;
-                          },
-                        ),
-
-                        const SizedBox(height: 16),
-
                         TextFormField(
                           controller: _emailController,
                           keyboardType: TextInputType.emailAddress,
@@ -243,13 +191,10 @@ class _SignUpScreenState extends State<SignUpScreen> {
                                 !_isValidEmail(value)) {
                               return 'Masukkan email valid';
                             }
-
                             return null;
                           },
                         ),
-
                         const SizedBox(height: 16),
-
                         TextFormField(
                           controller: _passwordController,
                           obscureText: !_isPasswordVisible,
@@ -268,11 +213,9 @@ class _SignUpScreenState extends State<SignUpScreen> {
                                     : Icons.visibility_off,
                                 color: Colors.grey,
                               ),
-                              onPressed: () {
-                                setState(() {
-                                  _isPasswordVisible = !_isPasswordVisible;
-                                });
-                              },
+                              onPressed: () => setState(
+                                () => _isPasswordVisible = !_isPasswordVisible,
+                              ),
                             ),
                             enabledBorder: OutlineInputBorder(
                               borderRadius: BorderRadius.circular(16),
@@ -291,17 +234,13 @@ class _SignUpScreenState extends State<SignUpScreen> {
                             if (value == null || value.isEmpty) {
                               return 'Masukkan password';
                             }
-
                             if (value.length < 6) {
                               return 'Password minimal 6 karakter';
                             }
-
                             return null;
                           },
                         ),
-
                         const SizedBox(height: 16),
-
                         TextFormField(
                           controller: _confirmPasswordController,
                           obscureText: !_isConfirmPasswordVisible,
@@ -320,12 +259,10 @@ class _SignUpScreenState extends State<SignUpScreen> {
                                     : Icons.visibility_off,
                                 color: Colors.grey,
                               ),
-                              onPressed: () {
-                                setState(() {
-                                  _isConfirmPasswordVisible =
-                                      !_isConfirmPasswordVisible;
-                                });
-                              },
+                              onPressed: () => setState(
+                                () => _isConfirmPasswordVisible =
+                                    !_isConfirmPasswordVisible,
+                              ),
                             ),
                             enabledBorder: OutlineInputBorder(
                               borderRadius: BorderRadius.circular(16),
@@ -344,13 +281,10 @@ class _SignUpScreenState extends State<SignUpScreen> {
                             if (value != _passwordController.text) {
                               return 'Password tidak sama';
                             }
-
                             return null;
                           },
                         ),
-
                         const SizedBox(height: 28),
-
                         SizedBox(
                           width: double.infinity,
                           height: 54,
@@ -386,9 +320,7 @@ class _SignUpScreenState extends State<SignUpScreen> {
                     ),
                   ),
                 ),
-
                 const SizedBox(height: 20),
-
                 Text.rich(
                   TextSpan(
                     text: 'Sudah punya akun? ',
