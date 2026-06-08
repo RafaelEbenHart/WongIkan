@@ -708,7 +708,7 @@ class _FavoriteTab extends StatelessWidget {
                             top: Radius.circular(12),
                           ),
                           child: SizedBox(
-                            height: 110,
+                            height: 100,
                             width: double.infinity,
                             child: gambar.toString().isNotEmpty
                                 ? Image.memory(
