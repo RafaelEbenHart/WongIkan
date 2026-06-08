@@ -64,7 +64,6 @@ class _MoreSectionWidgetState extends State<MoreSectionWidget>
   void _onScroll() {
     if (!_scrollController.hasClients) return;
     final pos = _scrollController.position;
-    // Anggap "di ujung" jika sisa scroll < 4px (toleransi sub-pixel)
     final reachedEnd = pos.pixels >= pos.maxScrollExtent - 4;
 
     if (reachedEnd && !_atEnd) {
@@ -82,9 +81,8 @@ class _MoreSectionWidgetState extends State<MoreSectionWidget>
 
     const int maxVisible = 6;
     final displayItems = widget.items.take(maxVisible).toList();
-    // Hanya tampilkan tombol jika item lebih dari yang muat di layar
-    // (jika semua item muat, tidak perlu tombol karena tidak bisa scroll)
     final bool canScroll = widget.items.length > 2;
+    final isDark = Theme.of(context).brightness == Brightness.dark;
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -93,16 +91,14 @@ class _MoreSectionWidgetState extends State<MoreSectionWidget>
           padding: const EdgeInsets.only(bottom: 12),
           child: Text(
             widget.title,
-            style: const TextStyle(
+            style: TextStyle(
               fontSize: 17,
               fontWeight: FontWeight.w700,
-              color: Color(0xFF1A1A2E),
+              color: isDark ? Colors.white : const Color(0xFF1A1A2E),
               letterSpacing: -0.3,
             ),
           ),
         ),
-        // Transform.translate -12 ke kiri agar shadow card pertama
-        // tidak terpotong oleh padding horizontal HomeScreen.
         Transform.translate(
           offset: const Offset(-12, 0),
           child: SizedBox(
@@ -141,7 +137,6 @@ class _MoreSectionWidgetState extends State<MoreSectionWidget>
                     animation: _btnAnimController,
                     builder: (context, child) => Positioned(
                       right: 8,
-                      // Tengah vertikal: (213 - ukuran tombol) / 2
                       top: 75,
                       child: Opacity(
                         opacity: _btnOpacity.value,
@@ -207,15 +202,20 @@ class _FishCard extends StatelessWidget {
     return format.format(number);
   }
 
-  Widget _placeholder() => Container(
-    color: const Color(0xFFEEF3FF),
-    child: const Center(
-      child: Icon(Icons.set_meal_rounded, size: 38, color: Color(0xFF6C8EF5)),
+  Widget _placeholder(bool isDark) => Container(
+    color: isDark ? const Color(0xFF2A2A3E) : const Color(0xFFEEF3FF),
+    child: Center(
+      child: Icon(
+        Icons.set_meal_rounded,
+        size: 38,
+        color: isDark ? const Color(0xFF9BAFFF) : const Color(0xFF6C8EF5),
+      ),
     ),
   );
 
   @override
   Widget build(BuildContext context) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
     final lokasiText = ikan['lokasi']?.toString() ?? '-';
     final harga = ikan['harga']?.toString() ?? '0';
     final nama = ikan['nama']?.toString() ?? '-';
@@ -229,7 +229,7 @@ class _FishCard extends StatelessWidget {
         width: 148,
         margin: const EdgeInsets.only(right: 10),
         decoration: BoxDecoration(
-          color: Colors.white,
+          color: isDark ? const Color(0xFF1E1E1E) : Colors.white,
           borderRadius: BorderRadius.circular(14),
           boxShadow: [
             BoxShadow(
@@ -257,9 +257,9 @@ class _FishCard extends StatelessWidget {
                     ? Image.memory(
                         base64Decode(ikan['gambar']),
                         fit: BoxFit.cover,
-                        errorBuilder: (_, __, ___) => _placeholder(),
+                        errorBuilder: (_, __, ___) => _placeholder(isDark),
                       )
-                    : _placeholder(),
+                    : _placeholder(isDark),
               ),
             ),
 
@@ -272,10 +272,10 @@ class _FishCard extends StatelessWidget {
                     nama,
                     maxLines: 1,
                     overflow: TextOverflow.ellipsis,
-                    style: const TextStyle(
+                    style: TextStyle(
                       fontSize: 13,
                       fontWeight: FontWeight.w700,
-                      color: Color(0xFF1A1A2E),
+                      color: isDark ? Colors.white : const Color(0xFF1A1A2E),
                       letterSpacing: -0.2,
                     ),
                   ),

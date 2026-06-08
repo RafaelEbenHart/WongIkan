@@ -105,15 +105,21 @@ class _ProfileScreenState extends State<ProfileScreen>
     }
 
     return Scaffold(
-      backgroundColor: const Color(0xFFF5F7FA),
+      backgroundColor: Theme.of(context).brightness == Brightness.dark
+          ? const Color(0xFF121212)
+          : const Color(0xFFF5F7FA),
       appBar: AppBar(
-        backgroundColor: Colors.grey.shade50,
+        backgroundColor: Theme.of(context).brightness == Brightness.dark
+            ? const Color(0xFF1E1E1E)
+            : Colors.grey.shade50,
         elevation: 0,
         leading: GestureDetector(
           onTap: () => Navigator.pop(context),
-          child: const Icon(
+          child: Icon(
             Icons.arrow_back_ios_new,
-            color: Colors.black87,
+            color: Theme.of(context).brightness == Brightness.dark
+                ? Colors.white
+                : Colors.black87,
             size: 20,
           ),
         ),
@@ -159,10 +165,11 @@ class _ProfileScreenState extends State<ProfileScreen>
 
           return NestedScrollView(
             headerSliverBuilder: (context, innerBoxIsScrolled) {
+              final isDark = Theme.of(context).brightness == Brightness.dark;
               return [
                 SliverToBoxAdapter(
                   child: Container(
-                    color: Colors.white,
+                    color: isDark ? const Color(0xFF121212) : Colors.white,
                     child: Column(
                       children: [
                         GestureDetector(
@@ -180,7 +187,9 @@ class _ProfileScreenState extends State<ProfileScreen>
                           },
                           child: CircleAvatar(
                             radius: 50,
-                            backgroundColor: Colors.grey.shade200,
+                            backgroundColor: isDark
+                                ? const Color(0xFF2A2A3E)
+                                : Colors.grey.shade200,
                             backgroundImage: profileImageBytes != null
                                 ? MemoryImage(profileImageBytes)
                                 : null,
@@ -188,7 +197,9 @@ class _ProfileScreenState extends State<ProfileScreen>
                                 ? Icon(
                                     Icons.person,
                                     size: 50,
-                                    color: Colors.grey.shade400,
+                                    color: isDark
+                                        ? Colors.grey.shade600
+                                        : Colors.grey.shade400,
                                   )
                                 : null,
                           ),
@@ -196,9 +207,10 @@ class _ProfileScreenState extends State<ProfileScreen>
                         const SizedBox(height: 12),
                         Text(
                           displayName,
-                          style: const TextStyle(
+                          style: TextStyle(
                             fontSize: 20,
                             fontWeight: FontWeight.bold,
+                            color: isDark ? Colors.white : Colors.black,
                           ),
                         ),
                         const SizedBox(height: 4),
@@ -206,7 +218,9 @@ class _ProfileScreenState extends State<ProfileScreen>
                           occupation,
                           style: TextStyle(
                             fontSize: 13,
-                            color: Colors.grey.shade600,
+                            color: isDark
+                                ? Colors.grey.shade400
+                                : Colors.grey.shade600,
                           ),
                         ),
                         const SizedBox(height: 8),
@@ -222,7 +236,9 @@ class _ProfileScreenState extends State<ProfileScreen>
                             Text(
                               location,
                               style: TextStyle(
-                                color: Colors.grey.shade600,
+                                color: isDark
+                                    ? Colors.grey.shade400
+                                    : Colors.grey.shade600,
                                 fontSize: 12,
                               ),
                             ),
@@ -358,27 +374,45 @@ class _ProfileScreenState extends State<ProfileScreen>
   }
 
   Widget _statItem({required String label, required String value}) {
-    return Column(
-      children: [
-        Text(
-          value,
-          style: const TextStyle(
-            fontSize: 18,
-            fontWeight: FontWeight.w700,
-            color: Color(0xFF5E7AC4),
-            letterSpacing: -0.5,
-          ),
-        ),
-        const SizedBox(height: 2),
-        Text(
-          label,
-          style: TextStyle(
-            fontSize: 11,
-            color: Colors.grey.shade500,
-            fontWeight: FontWeight.w400,
-          ),
-        ),
-      ],
+    return Builder(
+      builder: (context) {
+        final isDark = Theme.of(context).brightness == Brightness.dark;
+        return Column(
+          children: [
+            Text(
+              value,
+              style: const TextStyle(
+                fontSize: 18,
+                fontWeight: FontWeight.w700,
+                color: Color(0xFF5E7AC4),
+                letterSpacing: -0.5,
+              ),
+            ),
+            const SizedBox(height: 2),
+            Text(
+              label,
+              style: TextStyle(
+                fontSize: 11,
+                color: isDark ? Colors.grey.shade400 : Colors.grey.shade500,
+                fontWeight: FontWeight.w400,
+              ),
+            ),
+          ],
+        );
+      },
+    );
+  }
+
+  Widget _dividerStat() {
+    return Builder(
+      builder: (context) {
+        final isDark = Theme.of(context).brightness == Brightness.dark;
+        return Container(
+          width: 1,
+          height: 30,
+          color: isDark ? Colors.grey.shade700 : Colors.grey.shade200,
+        );
+      },
     );
   }
 
@@ -411,12 +445,16 @@ class _TabBarDelegate extends SliverPersistentHeaderDelegate {
     double shrinkOffset,
     bool overlapsContent,
   ) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
     return Container(
-      color: Colors.white,
+      color: isDark ? const Color(0xFF1E1E1E) : Colors.white,
       child: Column(
         mainAxisSize: MainAxisSize.min,
         children: [
-          Divider(height: 1, color: Colors.grey.shade200),
+          Divider(
+            height: 1,
+            color: isDark ? Colors.grey.shade700 : Colors.grey.shade200,
+          ),
           tabBar,
         ],
       ),
@@ -475,6 +513,7 @@ class _PostinganTab extends StatelessWidget {
         });
 
         if (posts.isEmpty) {
+          final isDark = Theme.of(context).brightness == Brightness.dark;
           return Center(
             child: Column(
               mainAxisAlignment: MainAxisAlignment.center,
@@ -482,7 +521,9 @@ class _PostinganTab extends StatelessWidget {
                 Container(
                   padding: const EdgeInsets.all(20),
                   decoration: BoxDecoration(
-                    color: const Color(0xFFF0F4FF),
+                    color: isDark
+                        ? const Color(0xFF2A2A3E)
+                        : const Color(0xFFF0F4FF),
                     shape: BoxShape.circle,
                   ),
                   child: Icon(
@@ -492,10 +533,10 @@ class _PostinganTab extends StatelessWidget {
                   ),
                 ),
                 const SizedBox(height: 14),
-                const Text(
+                Text(
                   'Belum ada postingan',
                   style: TextStyle(
-                    color: Color(0xFF1A1A2E),
+                    color: isDark ? Colors.white : const Color(0xFF1A1A2E),
                     fontSize: 14,
                     fontWeight: FontWeight.w600,
                   ),
@@ -503,7 +544,10 @@ class _PostinganTab extends StatelessWidget {
                 const SizedBox(height: 4),
                 Text(
                   'Mulai jual ikanmu sekarang!',
-                  style: TextStyle(color: Colors.grey.shade400, fontSize: 12),
+                  style: TextStyle(
+                    color: isDark ? Colors.grey.shade500 : Colors.grey.shade400,
+                    fontSize: 12,
+                  ),
                 ),
               ],
             ),
@@ -517,7 +561,7 @@ class _PostinganTab extends StatelessWidget {
             crossAxisCount: 2,
             crossAxisSpacing: 10,
             mainAxisSpacing: 10,
-            childAspectRatio: 0.88, // ✅ Lebih compact, tidak terlalu panjang
+            childAspectRatio: 1.00,
           ),
           itemBuilder: (context, index) {
             final postData = posts[index].data() as Map<String, dynamic>;
@@ -536,101 +580,111 @@ class _PostinganTab extends StatelessWidget {
                   ),
                 );
               },
-              child: Container(
-                decoration: BoxDecoration(
-                  color: Colors.white,
-                  borderRadius: BorderRadius.circular(14),
-                  boxShadow: [
-                    BoxShadow(
-                      color: Colors.black.withOpacity(0.06),
-                      blurRadius: 10,
-                      offset: const Offset(0, 3),
-                    ),
-                  ],
-                ),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    // Image — mengambil ~65% tinggi card
-                    Expanded(
-                      flex: 50,
-                      child: ClipRRect(
-                        borderRadius: const BorderRadius.vertical(
-                          top: Radius.circular(14),
+              child: Builder(
+                builder: (context) {
+                  final isDark =
+                      Theme.of(context).brightness == Brightness.dark;
+                  return Container(
+                    decoration: BoxDecoration(
+                      color: isDark ? const Color(0xFF1E1E1E) : Colors.white,
+                      borderRadius: BorderRadius.circular(14),
+                      boxShadow: [
+                        BoxShadow(
+                          color: Colors.black.withOpacity(isDark ? 0.3 : 0.06),
+                          blurRadius: 10,
+                          offset: const Offset(0, 3),
                         ),
-                        child: SizedBox(
-                          width: double.infinity,
-                          child: imageUrl.isNotEmpty
-                              ? Image.memory(
-                                  base64Decode(imageUrl),
-                                  fit: BoxFit.cover,
-                                  errorBuilder: (_, __, ___) =>
-                                      _imagePlaceholder(),
-                                )
-                              : _imagePlaceholder(),
-                        ),
-                      ),
+                      ],
                     ),
-                    // Info — mengambil ~35% tinggi card
-                    Expanded(
-                      flex: 35,
-                      child: Padding(
-                        padding: const EdgeInsets.fromLTRB(10, 8, 10, 8),
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-                          children: [
-                            Text(
-                              name,
-                              maxLines: 1,
-                              overflow: TextOverflow.ellipsis,
-                              style: const TextStyle(
-                                fontWeight: FontWeight.w700,
-                                fontSize: 12,
-                                color: Color(0xFF1A1A2E),
-                              ),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        // Image — mengambil ~65% tinggi card
+                        Expanded(
+                          flex: 50,
+                          child: ClipRRect(
+                            borderRadius: const BorderRadius.vertical(
+                              top: Radius.circular(14),
                             ),
-                            Row(
+                            child: SizedBox(
+                              width: double.infinity,
+                              child: imageUrl.isNotEmpty
+                                  ? Image.memory(
+                                      base64Decode(imageUrl),
+                                      fit: BoxFit.cover,
+                                      errorBuilder: (_, __, ___) =>
+                                          _imagePlaceholder(),
+                                    )
+                                  : _imagePlaceholder(),
+                            ),
+                          ),
+                        ),
+                        // Info — mengambil ~35% tinggi card
+                        Expanded(
+                          flex: 35,
+                          child: Padding(
+                            padding: const EdgeInsets.fromLTRB(10, 8, 10, 8),
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              mainAxisAlignment: MainAxisAlignment.spaceEvenly,
                               children: [
-                                Container(
-                                  width: 6,
-                                  height: 6,
-                                  decoration: const BoxDecoration(
-                                    shape: BoxShape.circle,
-                                    color: Color(0xFF5E7AC4),
+                                Text(
+                                  name,
+                                  maxLines: 1,
+                                  overflow: TextOverflow.ellipsis,
+                                  style: TextStyle(
+                                    fontWeight: FontWeight.w700,
+                                    fontSize: 12,
+                                    color: isDark
+                                        ? Colors.white
+                                        : const Color(0xFF1A1A2E),
                                   ),
                                 ),
-                                const SizedBox(width: 4),
-                                Expanded(
-                                  child: Text(
-                                    category,
-                                    maxLines: 1,
-                                    overflow: TextOverflow.ellipsis,
-                                    style: TextStyle(
-                                      color: Colors.grey.shade500,
-                                      fontSize: 10,
-                                      fontWeight: FontWeight.w400,
+                                Row(
+                                  children: [
+                                    Container(
+                                      width: 6,
+                                      height: 6,
+                                      decoration: const BoxDecoration(
+                                        shape: BoxShape.circle,
+                                        color: Color(0xFF5E7AC4),
+                                      ),
                                     ),
+                                    const SizedBox(width: 4),
+                                    Expanded(
+                                      child: Text(
+                                        category,
+                                        maxLines: 1,
+                                        overflow: TextOverflow.ellipsis,
+                                        style: TextStyle(
+                                          color: isDark
+                                              ? Colors.grey.shade400
+                                              : Colors.grey.shade500,
+                                          fontSize: 10,
+                                          fontWeight: FontWeight.w400,
+                                        ),
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                                Text(
+                                  formatRupiah(price),
+                                  maxLines: 1,
+                                  overflow: TextOverflow.ellipsis,
+                                  style: const TextStyle(
+                                    color: Color(0xFF5E7AC4),
+                                    fontSize: 12,
+                                    fontWeight: FontWeight.w700,
                                   ),
                                 ),
                               ],
                             ),
-                            Text(
-                              formatRupiah(price),
-                              maxLines: 1,
-                              overflow: TextOverflow.ellipsis,
-                              style: const TextStyle(
-                                color: Color(0xFF5E7AC4),
-                                fontSize: 12,
-                                fontWeight: FontWeight.w700,
-                              ),
-                            ),
-                          ],
+                          ),
                         ),
-                      ),
+                      ],
                     ),
-                  ],
-                ),
+                  );
+                },
               ),
             );
           },
@@ -640,15 +694,20 @@ class _PostinganTab extends StatelessWidget {
   }
 
   Widget _imagePlaceholder() {
-    return Container(
-      color: const Color(0xFFF0F4FF),
-      child: const Center(
-        child: Icon(
-          Icons.image_not_supported_rounded,
-          color: Color(0xFFB8C8E8),
-          size: 28,
-        ),
-      ),
+    return Builder(
+      builder: (context) {
+        final isDark = Theme.of(context).brightness == Brightness.dark;
+        return Container(
+          color: isDark ? const Color(0xFF2A2A3E) : const Color(0xFFF0F4FF),
+          child: Center(
+            child: Icon(
+              Icons.image_not_supported_rounded,
+              color: isDark ? Colors.grey.shade600 : const Color(0xFFB8C8E8),
+              size: 28,
+            ),
+          ),
+        );
+      },
     );
   }
 }
@@ -727,27 +786,32 @@ class _FavoriteTab extends StatelessWidget {
         final favorites = snapshot.data?.docs ?? [];
 
         if (favorites.isEmpty) {
+          final isDark = Theme.of(context).brightness == Brightness.dark;
           return Center(
             child: Column(
               mainAxisAlignment: MainAxisAlignment.center,
               children: [
                 Container(
                   padding: const EdgeInsets.all(20),
-                  decoration: const BoxDecoration(
-                    color: Color(0xFFFFF0F0),
+                  decoration: BoxDecoration(
+                    color: isDark
+                        ? Color(0xFF2A2A3E).withOpacity(0.7)
+                        : const Color(0xFFFFF0F0),
                     shape: BoxShape.circle,
                   ),
                   child: Icon(
                     Icons.favorite_border_rounded,
                     size: 36,
-                    color: Colors.red.shade300,
+                    color: isDark
+                        ? Colors.red.shade300.withOpacity(0.6)
+                        : Colors.red.shade300,
                   ),
                 ),
                 const SizedBox(height: 14),
-                const Text(
+                Text(
                   'Belum ada favorite',
                   style: TextStyle(
-                    color: Color(0xFF1A1A2E),
+                    color: isDark ? Colors.white : const Color(0xFF1A1A2E),
                     fontSize: 14,
                     fontWeight: FontWeight.w600,
                   ),
@@ -755,7 +819,10 @@ class _FavoriteTab extends StatelessWidget {
                 const SizedBox(height: 4),
                 Text(
                   'Tekan ❤️ di halaman detail untuk menyimpan',
-                  style: TextStyle(color: Colors.grey.shade400, fontSize: 12),
+                  style: TextStyle(
+                    color: isDark ? Colors.grey.shade500 : Colors.grey.shade400,
+                    fontSize: 12,
+                  ),
                   textAlign: TextAlign.center,
                 ),
               ],
@@ -770,7 +837,7 @@ class _FavoriteTab extends StatelessWidget {
             crossAxisCount: 2,
             crossAxisSpacing: 10,
             mainAxisSpacing: 10,
-            childAspectRatio: 0.88, // ✅ Lebih compact, tidak terlalu panjang
+            childAspectRatio: 1.00,
           ),
           itemBuilder: (context, index) {
             final item = favorites[index].data() as Map<String, dynamic>;
@@ -810,103 +877,128 @@ class _FavoriteTab extends StatelessWidget {
                       ),
                     );
                   },
-                  child: Card(
-                    elevation: 1,
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(12),
-                    ),
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Stack(
+                  child: Builder(
+                    builder: (context) {
+                      final isDark =
+                          Theme.of(context).brightness == Brightness.dark;
+                      return Card(
+                        color: isDark ? const Color(0xFF1E1E1E) : Colors.white,
+                        elevation: isDark ? 2 : 1,
+                        shadowColor: Colors.black.withOpacity(
+                          isDark ? 0.4 : 0.1,
+                        ),
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(12),
+                        ),
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
-                            ClipRRect(
-                              borderRadius: const BorderRadius.vertical(
-                                top: Radius.circular(12),
-                              ),
-                              child: SizedBox(
-                                height: 100,
-                                width: double.infinity,
-                                child: gambar.toString().isNotEmpty
-                                    ? Image.memory(
-                                        base64Decode(gambar),
-                                        fit: BoxFit.cover,
-                                        errorBuilder: (_, __, ___) => Container(
-                                          color: Colors.grey.shade200,
-                                          child: Icon(
-                                            Icons.image_not_supported,
-                                            color: Colors.grey.shade400,
-                                          ),
-                                        ),
-                                      )
-                                    : Container(
-                                        color: Colors.grey.shade200,
-                                        child: Icon(
-                                          Icons.image_not_supported,
-                                          color: Colors.grey.shade400,
-                                        ),
-                                      ),
-                              ),
-                            ),
-                            Positioned(
-                              top: 6,
-                              right: 6,
-                              child: GestureDetector(
-                                onTap: () => _konfirmasiHapus(context, ikanId),
-                                child: Container(
-                                  padding: const EdgeInsets.all(4),
-                                  decoration: BoxDecoration(
-                                    color: Colors.white.withOpacity(0.9),
-                                    shape: BoxShape.circle,
+                            Stack(
+                              children: [
+                                ClipRRect(
+                                  borderRadius: const BorderRadius.vertical(
+                                    top: Radius.circular(12),
                                   ),
-                                  child: const Icon(
-                                    Icons.favorite,
-                                    color: Colors.red,
-                                    size: 14,
+                                  child: SizedBox(
+                                    height: 100,
+                                    width: double.infinity,
+                                    child: gambar.toString().isNotEmpty
+                                        ? Image.memory(
+                                            base64Decode(gambar),
+                                            fit: BoxFit.cover,
+                                            errorBuilder: (_, __, ___) =>
+                                                Container(
+                                                  color: isDark
+                                                      ? const Color(0xFF2A2A3E)
+                                                      : Colors.grey.shade200,
+                                                  child: Icon(
+                                                    Icons.image_not_supported,
+                                                    color: isDark
+                                                        ? Colors.grey.shade600
+                                                        : Colors.grey.shade400,
+                                                  ),
+                                                ),
+                                          )
+                                        : Container(
+                                            color: isDark
+                                                ? const Color(0xFF2A2A3E)
+                                                : Colors.grey.shade200,
+                                            child: Icon(
+                                              Icons.image_not_supported,
+                                              color: isDark
+                                                  ? Colors.grey.shade600
+                                                  : Colors.grey.shade400,
+                                            ),
+                                          ),
                                   ),
                                 ),
+                                Positioned(
+                                  top: 6,
+                                  right: 6,
+                                  child: GestureDetector(
+                                    onTap: () =>
+                                        _konfirmasiHapus(context, ikanId),
+                                    child: Container(
+                                      padding: const EdgeInsets.all(4),
+                                      decoration: BoxDecoration(
+                                        color: Colors.white.withOpacity(0.9),
+                                        shape: BoxShape.circle,
+                                      ),
+                                      child: const Icon(
+                                        Icons.favorite,
+                                        color: Colors.red,
+                                        size: 14,
+                                      ),
+                                    ),
+                                  ),
+                                ),
+                              ],
+                            ),
+                            Padding(
+                              padding: const EdgeInsets.all(8),
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  Text(
+                                    nama,
+                                    maxLines: 1,
+                                    overflow: TextOverflow.ellipsis,
+                                    style: TextStyle(
+                                      fontWeight: FontWeight.bold,
+                                      fontSize: 12,
+                                      color: isDark
+                                          ? Colors.white
+                                          : Colors.black,
+                                    ),
+                                  ),
+                                  const SizedBox(height: 3),
+                                  Text(
+                                    kategori,
+                                    style: TextStyle(
+                                      color: isDark
+                                          ? Colors.grey.shade400
+                                          : Colors.grey.shade600,
+                                      fontSize: 11,
+                                    ),
+                                  ),
+                                  const SizedBox(height: 4),
+                                  Text(
+                                    formatRupiah(harga),
+                                    maxLines: 1,
+                                    overflow: TextOverflow.ellipsis,
+                                    style: const TextStyle(
+                                      color: Color(0xFF5E7AC4),
+                                      fontSize: 12,
+                                      fontWeight: FontWeight.bold,
+                                    ),
+                                  ),
+                                ],
                               ),
                             ),
                           ],
                         ),
-                        Padding(
-                          padding: const EdgeInsets.all(8),
-                          child: Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              Text(
-                                nama,
-                                maxLines: 1,
-                                overflow: TextOverflow.ellipsis,
-                                style: const TextStyle(
-                                  fontWeight: FontWeight.bold,
-                                  fontSize: 12,
-                                ),
-                              ),
-                              const SizedBox(height: 3),
-                              Text(
-                                kategori,
-                                style: TextStyle(
-                                  color: Colors.grey.shade600,
-                                  fontSize: 11,
-                                ),
-                              ),
-                              const SizedBox(height: 4),
-                              Text(
-                                formatRupiah(harga),
-                                maxLines: 1,
-                                overflow: TextOverflow.ellipsis,
-                                style: const TextStyle(
-                                  color: Color(0xFF5E7AC4),
-                                  fontSize: 12,
-                                  fontWeight: FontWeight.bold,
-                                ),
-                              ),
-                            ],
-                          ),
-                        ),
-                      ],
-                    ),
+                      );
+                    },
                   ),
                 );
               },

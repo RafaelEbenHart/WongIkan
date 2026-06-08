@@ -41,6 +41,18 @@ class _HomeScreenState extends State<HomeScreen> {
   ];
   String selectedCategory = 'Semua';
 
+  String _formatCurrency(String priceStr) {
+    try {
+      final price = int.parse(priceStr);
+      return price.toString().replaceAllMapped(
+        RegExp(r'(\d)(?=(\d{3})+(?!\d))'),
+        (Match m) => '${m[1]}.',
+      );
+    } catch (e) {
+      return priceStr;
+    }
+  }
+
   @override
   void initState() {
     super.initState();
@@ -113,6 +125,7 @@ class _HomeScreenState extends State<HomeScreen> {
     final harga = ikan['harga']?.toString() ?? '0';
     final nama = ikan['nama']?.toString() ?? 'Tanpa Nama';
     final gambarString = ikan['gambar']?.toString() ?? '';
+    final isDark = Theme.of(context).brightness == Brightness.dark;
 
     return GestureDetector(
       onTap: () => Navigator.push(
@@ -121,11 +134,11 @@ class _HomeScreenState extends State<HomeScreen> {
       ),
       child: Container(
         decoration: BoxDecoration(
-          color: Colors.white,
+          color: isDark ? const Color(0xFF1E1E1E) : Colors.white,
           borderRadius: BorderRadius.circular(14),
           boxShadow: [
             BoxShadow(
-              color: const Color(0xFF6C8EF5).withOpacity(0.10),
+              color: const Color(0xFF6C8EF5).withOpacity(isDark ? 0.05 : 0.10),
               blurRadius: 14,
               offset: const Offset(0, 4),
             ),
@@ -161,20 +174,22 @@ class _HomeScreenState extends State<HomeScreen> {
                     nama,
                     maxLines: 1,
                     overflow: TextOverflow.ellipsis,
-                    style: const TextStyle(
+                    style: TextStyle(
                       fontSize: 13,
                       fontWeight: FontWeight.w700,
-                      color: Color(0xFF1A1A2E),
+                      color: isDark ? Colors.white : const Color(0xFF1A1A2E),
                       letterSpacing: -0.2,
                     ),
                   ),
                   const SizedBox(height: 4),
                   Row(
                     children: [
-                      const Icon(
+                      Icon(
                         Icons.location_on_rounded,
                         size: 11,
-                        color: Color(0xFF9E9E9E),
+                        color: isDark
+                            ? const Color(0xFFB0B0B0)
+                            : const Color(0xFF9E9E9E),
                       ),
                       const SizedBox(width: 3),
                       Expanded(
@@ -182,9 +197,11 @@ class _HomeScreenState extends State<HomeScreen> {
                           lokasiText,
                           maxLines: 1,
                           overflow: TextOverflow.ellipsis,
-                          style: const TextStyle(
+                          style: TextStyle(
                             fontSize: 10,
-                            color: Color(0xFF9E9E9E),
+                            color: isDark
+                                ? const Color(0xFFB0B0B0)
+                                : const Color(0xFF9E9E9E),
                           ),
                         ),
                       ),
@@ -192,7 +209,7 @@ class _HomeScreenState extends State<HomeScreen> {
                   ),
                   const SizedBox(height: 6),
                   Text(
-                    'Rp $harga',
+                    'Rp ${_formatCurrency(harga)}',
                     style: const TextStyle(
                       color: Color(0xFF6C8EF5),
                       fontWeight: FontWeight.w800,
@@ -209,12 +226,19 @@ class _HomeScreenState extends State<HomeScreen> {
     );
   }
 
-  Widget _buildPlaceholder() => Container(
-    color: const Color(0xFFEEF3FF),
-    child: const Center(
-      child: Icon(Icons.set_meal_rounded, size: 38, color: Color(0xFF6C8EF5)),
-    ),
-  );
+  Widget _buildPlaceholder() {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    return Container(
+      color: isDark ? const Color(0xFF2A2A3E) : const Color(0xFFEEF3FF),
+      child: Center(
+        child: Icon(
+          Icons.set_meal_rounded,
+          size: 38,
+          color: isDark ? const Color(0xFF9BAFFF) : const Color(0xFF6C8EF5),
+        ),
+      ),
+    );
+  }
 
   Widget _buildDisarankanGrid(List<QueryDocumentSnapshot> items) {
     final screenWidth = MediaQuery.of(context).size.width;
@@ -279,17 +303,20 @@ class _HomeScreenState extends State<HomeScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
     return Scaffold(
-      backgroundColor: const Color(0xFFF4F6FF),
+      backgroundColor: isDark
+          ? const Color(0xFF121212)
+          : const Color(0xFFF4F6FF),
       appBar: AppBar(
-        backgroundColor: Colors.transparent,
+        backgroundColor: isDark ? const Color(0xFF1E1E1E) : Colors.transparent,
         elevation: 0,
-        foregroundColor: Colors.black,
+        foregroundColor: isDark ? Colors.white : Colors.black,
         automaticallyImplyLeading: false,
-        title: const Text(
+        title: Text(
           'WONGIWAK',
           style: TextStyle(
-            color: Color(0xFF1A1A2E),
+            color: isDark ? Colors.white : const Color(0xFF1A1A2E),
             fontWeight: FontWeight.w800,
             fontSize: 22,
             letterSpacing: -0.5,
@@ -307,10 +334,14 @@ class _HomeScreenState extends State<HomeScreen> {
               },
               child: CircleAvatar(
                 radius: 19,
-                backgroundColor: const Color(0xFFEEF3FF),
-                child: const Icon(
+                backgroundColor: isDark
+                    ? const Color(0xFF2A2A3E)
+                    : const Color(0xFFEEF3FF),
+                child: Icon(
                   Icons.person_rounded,
-                  color: Color(0xFF6C8EF5),
+                  color: isDark
+                      ? const Color(0xFF9BAFFF)
+                      : const Color(0xFF6C8EF5),
                   size: 20,
                 ),
               ),
@@ -320,6 +351,7 @@ class _HomeScreenState extends State<HomeScreen> {
       ),
       floatingActionButton: FloatingActionButton(
         backgroundColor: const Color(0xFF6C8EF5),
+        foregroundColor: Colors.white,
         elevation: 4,
         onPressed: () {
           if (FirebaseAuth.instance.currentUser == null) {
@@ -361,7 +393,7 @@ class _HomeScreenState extends State<HomeScreen> {
                   vertical: 2,
                 ),
                 decoration: BoxDecoration(
-                  color: Colors.white,
+                  color: isDark ? const Color(0xFF1E1E1E) : Colors.white,
                   borderRadius: BorderRadius.circular(14),
                   boxShadow: [
                     BoxShadow(
@@ -378,23 +410,27 @@ class _HomeScreenState extends State<HomeScreen> {
                       searchQuery = value.toLowerCase();
                     });
                   },
-                  style: const TextStyle(
+                  style: TextStyle(
                     fontSize: 14,
-                    color: Color(0xFF1A1A2E),
+                    color: isDark ? Colors.white : const Color(0xFF1A1A2E),
                   ),
-                  decoration: const InputDecoration(
+                  decoration: InputDecoration(
                     hintText: 'Cari ikan, kategori, atau lokasi...',
                     prefixIcon: Icon(
                       Icons.search_rounded,
-                      color: Color(0xFF9E9E9E),
+                      color: isDark
+                          ? const Color(0xFF9BAFFF)
+                          : const Color(0xFF9E9E9E),
                       size: 20,
                     ),
                     border: InputBorder.none,
                     hintStyle: TextStyle(
-                      color: Color(0xFFBDBDBD),
+                      color: isDark
+                          ? Colors.grey.shade600
+                          : const Color(0xFFBDBDBD),
                       fontSize: 14,
                     ),
-                    contentPadding: EdgeInsets.symmetric(vertical: 14),
+                    contentPadding: const EdgeInsets.symmetric(vertical: 14),
                   ),
                 ),
               ),
@@ -421,7 +457,9 @@ class _HomeScreenState extends State<HomeScreen> {
                         decoration: BoxDecoration(
                           color: active
                               ? const Color(0xFF6C8EF5)
-                              : Colors.white,
+                              : (isDark
+                                    ? const Color(0xFF1E1E1E)
+                                    : Colors.white),
                           borderRadius: BorderRadius.circular(10),
                           boxShadow: active
                               ? [
@@ -437,7 +475,9 @@ class _HomeScreenState extends State<HomeScreen> {
                           border: Border.all(
                             color: active
                                 ? const Color(0xFF6C8EF5)
-                                : Colors.grey.shade200,
+                                : (isDark
+                                      ? Colors.grey.shade700
+                                      : Colors.grey.shade200),
                           ),
                         ),
                         child: Text(
@@ -445,7 +485,9 @@ class _HomeScreenState extends State<HomeScreen> {
                           style: TextStyle(
                             color: active
                                 ? Colors.white
-                                : const Color(0xFF6B6B80),
+                                : (isDark
+                                      ? Colors.grey.shade400
+                                      : const Color(0xFF6B6B80)),
                             fontWeight: active
                                 ? FontWeight.w700
                                 : FontWeight.w500,
@@ -543,14 +585,16 @@ class _HomeScreenState extends State<HomeScreen> {
                     return Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        const Padding(
-                          padding: EdgeInsets.only(bottom: 12),
+                        Padding(
+                          padding: const EdgeInsets.only(bottom: 12),
                           child: Text(
                             'Disarankan',
                             style: TextStyle(
                               fontSize: 17,
                               fontWeight: FontWeight.w700,
-                              color: Color(0xFF1A1A2E),
+                              color: isDark
+                                  ? Colors.white
+                                  : const Color(0xFF1A1A2E),
                               letterSpacing: -0.3,
                             ),
                           ),
@@ -566,14 +610,16 @@ class _HomeScreenState extends State<HomeScreen> {
                     return Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        const Padding(
-                          padding: EdgeInsets.only(bottom: 12),
+                        Padding(
+                          padding: const EdgeInsets.only(bottom: 12),
                           child: Text(
                             'Disarankan',
                             style: TextStyle(
                               fontSize: 17,
                               fontWeight: FontWeight.w700,
-                              color: Color(0xFF1A1A2E),
+                              color: isDark
+                                  ? Colors.white
+                                  : const Color(0xFF1A1A2E),
                               letterSpacing: -0.3,
                             ),
                           ),
