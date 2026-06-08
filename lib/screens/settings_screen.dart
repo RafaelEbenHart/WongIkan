@@ -20,6 +20,10 @@ class _SettingsScreenState extends State<SettingsScreen> {
   late TextEditingController occupationController;
   late TextEditingController alamatController;
 
+  double? latitude;
+  double? longitude;
+  bool isLoadingAlamat = false;
+
   XFile? selectedImage;
   Uint8List? selectedImageBytes;
   bool isUploading = false;
@@ -52,15 +56,91 @@ class _SettingsScreenState extends State<SettingsScreen> {
             .doc(currentUser!.uid)
             .get();
 
-      if (doc.exists) {
-        final data = doc.data() as Map<String, dynamic>;
+        if (doc.exists) {
+          final data = doc.data() as Map<String, dynamic>;
+          Uint8List? loadedImage;
+          final imgField = data['profileImageBytes'];
+          if (imgField != null) {
+            if (imgField is Blob) {
+              loadedImage = imgField.bytes;
+            } else if (imgField is Uint8List) {
+              loadedImage = imgField;
+            } else if (imgField is List) {
+              loadedImage = Uint8List.fromList(List<int>.from(imgField));
+            }
+          }
+
+          setState(() {
+            usernameController.text = data['username'] ?? '';
+            locationController.text = data['location'] ?? '';
+            occupationController.text =
+                data['occupation'] ?? 'Penjual ikan segar';
+            alamatController.text = data['alamat'] ?? '';
+            if (data['latitude'] != null) {
+              latitude = (data['latitude'] is num)
+                  ? (data['latitude'] as num).toDouble()
+                  : null;
+            }
+            if (data['longitude'] != null) {
+              longitude = (data['longitude'] is num)
+                  ? (data['longitude'] as num).toDouble()
+                  : null;
+            }
+            if (loadedImage != null) {
+              selectedImageBytes = loadedImage;
+            }
+          });
+        }
+      } catch (e) {
+        // ignore: avoid_print
+        print('Error loading user data: $e');
+      }
+    }
+  }
+
+  Future<void> _ambilAlamatDariGPS() async {
+    if (isLoadingAlamat) return;
+    setState(() => isLoadingAlamat = true);
+    try {
+      LocationPermission permission = await Geolocator.checkPermission();
+      if (permission == LocationPermission.denied) {
+        permission = await Geolocator.requestPermission();
+      }
+      if (permission == LocationPermission.denied ||
+          permission == LocationPermission.deniedForever) {
+        _showSnackBar('Izin lokasi ditolak. Aktifkan izin lokasi.');
+        return;
+      }
+
+      final pos = await Geolocator.getCurrentPosition(
+        desiredAccuracy: LocationAccuracy.best,
+      );
+      latitude = pos.latitude;
+      longitude = pos.longitude;
+
+      final placemarks = await placemarkFromCoordinates(latitude!, longitude!);
+      if (placemarks.isNotEmpty) {
+        final p = placemarks.first;
+        final address = [
+          p.street,
+          p.subLocality,
+          p.locality,
+          p.subAdministrativeArea,
+          p.administrativeArea,
+          p.postalCode,
+          p.country,
+        ].where((s) => s != null && s.isNotEmpty).join(', ');
         setState(() {
-          usernameController.text = data['username'] ?? '';
-          locationController.text = data['location'] ?? '';
-          occupationController.text =
-              data['occupation'] ?? 'Penjual ikan segar';
+          alamatController.text = address;
+          if (p.locality != null && p.locality!.isNotEmpty) {
+            locationController.text = p.locality!;
+          }
         });
       }
+    } catch (e) {
+      _showSnackBar('Gagal mengambil lokasi: $e');
+    } finally {
+      if (mounted) setState(() => isLoadingAlamat = false);
     }
   }
 
