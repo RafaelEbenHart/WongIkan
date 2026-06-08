@@ -106,6 +106,8 @@ class _ProfileScreenState extends State<ProfileScreen>
       appBar: AppBar(
         backgroundColor: Colors.grey.shade50,
         elevation: 0,
+        backgroundColor: Colors.grey.shade50,
+        elevation: 0,
         leading: GestureDetector(
           onTap: () => Navigator.pop(context),
           child: const Icon(Icons.arrow_back, color: Colors.black),
@@ -156,58 +158,38 @@ class _ProfileScreenState extends State<ProfileScreen>
                     color: Colors.white,
                     child: Column(
                       children: [
-                        Stack(
-                          children: [
-                            Container(
-                              decoration: BoxDecoration(
-                                shape: BoxShape.circle,
-                                border: Border.all(
-                                  color: const Color(0xFF5E7AC4),
-                                  width: 3,
-                                ),
+                        GestureDetector(
+                          onTap: () {
+                            Navigator.push(
+                              context,
+                              MaterialPageRoute(
+                                builder: (_) => const SettingsScreen(),
                               ),
-                              child: CircleAvatar(
-                                radius: 50,
-                                backgroundColor: Colors.grey.shade200,
-                                backgroundImage: profileImageBytes != null
-                                    ? MemoryImage(profileImageBytes)
-                                    : null,
-                                child: profileImageBytes == null
-                                    ? Icon(
-                                        Icons.person,
-                                        size: 50,
-                                        color: Colors.grey.shade400,
-                                      )
-                                    : null,
+                            );
+                          },
+                          child: Container(
+                            decoration: BoxDecoration(
+                              shape: BoxShape.circle,
+                              border: Border.all(
+                                color: const Color(0xFF5E7AC4),
+                                width: 3,
                               ),
                             ),
-                            Positioned(
-                              bottom: 0,
-                              right: 0,
-                              child: GestureDetector(
-                                onTap: () {
-                                  Navigator.push(
-                                    context,
-                                    MaterialPageRoute(
-                                      builder: (_) => const SettingsScreen(),
-                                    ),
-                                  );
-                                },
-                                child: Container(
-                                  padding: const EdgeInsets.all(6),
-                                  decoration: const BoxDecoration(
-                                    shape: BoxShape.circle,
-                                    color: Color(0xFF5E7AC4),
-                                  ),
-                                  child: const Icon(
-                                    Icons.camera_alt,
-                                    color: Colors.white,
-                                    size: 16,
-                                  ),
-                                ),
-                              ),
+                            child: CircleAvatar(
+                              radius: 50,
+                              backgroundColor: Colors.grey.shade200,
+                              backgroundImage: profileImageBytes != null
+                                  ? MemoryImage(profileImageBytes)
+                                  : null,
+                              child: profileImageBytes == null
+                                  ? Icon(
+                                      Icons.person,
+                                      size: 50,
+                                      color: Colors.grey.shade400,
+                                    )
+                                  : null,
                             ),
-                          ],
+                          ),
                         ),
                         const SizedBox(height: 12),
                         Text(

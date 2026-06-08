@@ -273,37 +273,21 @@ class _SettingsScreenState extends State<SettingsScreen> {
                               width: 3,
                             ),
                           ),
-                          child: CircleAvatar(
-                            radius: 60,
-                            backgroundColor: Colors.grey.shade200,
-                            backgroundImage: selectedImageBytes != null
-                                ? MemoryImage(selectedImageBytes!)
-                                : null,
-                            child: selectedImageBytes == null
-                                ? Icon(
-                                    Icons.person,
-                                    size: 60,
-                                    color: Colors.grey.shade400,
-                                  )
-                                : null,
-                          ),
-                        ),
-                        Positioned(
-                          bottom: 0,
-                          right: 0,
                           child: GestureDetector(
                             onTap: _pickImage,
-                            child: Container(
-                              padding: const EdgeInsets.all(8),
-                              decoration: const BoxDecoration(
-                                shape: BoxShape.circle,
-                                color: Color(0xFF5E7AC4),
-                              ),
-                              child: const Icon(
-                                Icons.camera_alt,
-                                color: Colors.white,
-                                size: 20,
-                              ),
+                            child: CircleAvatar(
+                              radius: 60,
+                              backgroundColor: Colors.grey.shade200,
+                              backgroundImage: selectedImageBytes != null
+                                  ? MemoryImage(selectedImageBytes!)
+                                  : null,
+                              child: selectedImageBytes == null
+                                  ? Icon(
+                                      Icons.person,
+                                      size: 60,
+                                      color: Colors.grey.shade400,
+                                    )
+                                  : null,
                             ),
                           ),
                         ),
