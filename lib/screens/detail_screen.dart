@@ -3,12 +3,14 @@ import 'dart:convert';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
+import 'package:geolocator/geolocator.dart';
 import 'package:intl/intl.dart';
 import 'package:share_plus/share_plus.dart';
 import 'package:url_launcher/url_launcher.dart';
 import 'package:wongiwak/screens/sign_in_screen.dart';
 import 'package:wongiwak/widgets/commentTrigger.dart';
 import 'package:wongiwak/screens/toko_screen.dart';
+import 'package:wongiwak/screens/perbandingan_screen.dart';
 
 class DetailScreen extends StatefulWidget {
   final String ikanId;
@@ -172,6 +174,60 @@ class _DetailScreenState extends State<DetailScreen> {
     );
   }
 
+  // ── FETCH PERBANDINGAN HARGA ──
+  Future<List<Map<String, dynamic>>> _fetchPerbandingan(
+    String nama,
+    String kategori,
+    double lat,
+    double lng,
+  ) async {
+    try {
+      final snapshot = await FirebaseFirestore.instance
+          .collection('ikan')
+          .where('nama', isEqualTo: nama)
+          .where('kategori', isEqualTo: kategori)
+          .get();
+
+      final List<Map<String, dynamic>> hasil = [];
+
+      for (final doc in snapshot.docs) {
+        final data = doc.data();
+        final docLat = (data['latitude'] as num?)?.toDouble();
+        final docLng = (data['longitude'] as num?)?.toDouble();
+        if (docLat == null || docLng == null) continue;
+
+        final jarak = Geolocator.distanceBetween(lat, lng, docLat, docLng);
+        if (jarak <= 1000) {
+          hasil.add({...data, 'ikanId': doc.id, 'jarak': jarak});
+        }
+      }
+
+      hasil.sort((a, b) {
+        final hA = int.tryParse(a['harga'].toString()) ?? 0;
+        final hB = int.tryParse(b['harga'].toString()) ?? 0;
+        return hA.compareTo(hB);
+      });
+
+      return hasil;
+    } catch (e) {
+      debugPrint('Error fetching perbandingan: $e');
+      return [];
+    }
+  }
+
+  // ── DEFAULT AVATAR ──
+  Widget _defaultAvatar() {
+    return Container(
+      width: 52,
+      height: 52,
+      decoration: BoxDecoration(
+        color: Colors.blue.shade50,
+        borderRadius: BorderRadius.circular(12),
+      ),
+      child: const Icon(Icons.storefront, color: Colors.blue, size: 24),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -211,6 +267,20 @@ class _DetailScreenState extends State<DetailScreen> {
               ? (data['created_at'] as Timestamp).toDate()
               : DateTime.now();
 
+          // Parse lat/lng sekali untuk dipakai di beberapa tempat
+          final double? parsedLat = latitude == null
+              ? null
+              : (latitude is num)
+              ? latitude.toDouble()
+              : double.tryParse(latitude.toString());
+          final double? parsedLng = longitude == null
+              ? null
+              : (longitude is num)
+              ? longitude.toDouble()
+              : double.tryParse(longitude.toString());
+
+          final hargaCurrent = int.tryParse(harga.toString()) ?? 0;
+
           return CommentTrigger(
             onSwipeUp: () => _bukaKomentar(widget.ikanId),
             child: SafeArea(
@@ -218,6 +288,7 @@ class _DetailScreenState extends State<DetailScreen> {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
+                    // ── APP BAR ──
                     Padding(
                       padding: const EdgeInsets.symmetric(
                         horizontal: 16,
@@ -263,6 +334,8 @@ class _DetailScreenState extends State<DetailScreen> {
                         ],
                       ),
                     ),
+
+                    // ── GAMBAR ──
                     GestureDetector(
                       onTap: () {
                         if (gambar.toString().isNotEmpty) {
@@ -308,104 +381,72 @@ class _DetailScreenState extends State<DetailScreen> {
                             : const Icon(Icons.image, size: 80),
                       ),
                     ),
+
                     const SizedBox(height: 16),
-                    Padding(
-                      padding: const EdgeInsets.symmetric(horizontal: 16),
-                      child: Row(
-                        children: [
-                          GestureDetector(
-                            onTap: () => _bukaKomentar(widget.ikanId),
-                            child: Container(
-                              padding: const EdgeInsets.symmetric(
-                                horizontal: 16,
-                                vertical: 10,
-                              ),
-                              decoration: BoxDecoration(
-                                color: Colors.white,
-                                borderRadius: BorderRadius.circular(12),
-                              ),
-                              child: StreamBuilder<QuerySnapshot>(
-                                stream: firestore
-                                    .collection('ikan')
-                                    .doc(widget.ikanId)
-                                    .collection('komentar')
-                                    .snapshots(),
-                                builder: (context, snap) {
-                                  final count = snap.hasData
-                                      ? snap.data!.docs.length
-                                      : 0;
-                                  return Row(
+
+                    // ── FAVORIT (Kanan) ──
+                    Align(
+                      alignment: Alignment.centerRight,
+                      child: Padding(
+                        padding: const EdgeInsets.only(right: 16),
+                        child: GestureDetector(
+                          onTap: () => _toggleFavorite(data),
+                          child: Container(
+                            padding: const EdgeInsets.symmetric(
+                              horizontal: 16,
+                              vertical: 10,
+                            ),
+                            decoration: BoxDecoration(
+                              color: _isFavorite
+                                  ? Colors.red.shade50
+                                  : Colors.white,
+                              borderRadius: BorderRadius.circular(12),
+                            ),
+                            child: _loadingFavorite
+                                ? const SizedBox(
+                                    width: 20,
+                                    height: 20,
+                                    child: CircularProgressIndicator(
+                                      strokeWidth: 2,
+                                      color: Colors.red,
+                                    ),
+                                  )
+                                : Row(
                                     mainAxisSize: MainAxisSize.min,
                                     children: [
-                                      const Icon(
-                                        Icons.comment_outlined,
+                                      Icon(
+                                        _isFavorite
+                                            ? Icons.favorite
+                                            : Icons.favorite_border,
                                         size: 20,
+                                        color: _isFavorite
+                                            ? Colors.red
+                                            : Colors.black87,
                                       ),
                                       const SizedBox(width: 6),
-                                      Text("$count Komentar"),
-                                    ],
-                                  );
-                                },
-                              ),
-                            ),
-                          ),
-                          const SizedBox(width: 10),
-                          GestureDetector(
-                            onTap: () => _toggleFavorite(data),
-                            child: Container(
-                              padding: const EdgeInsets.symmetric(
-                                horizontal: 16,
-                                vertical: 10,
-                              ),
-                              decoration: BoxDecoration(
-                                color: _isFavorite
-                                    ? Colors.red.shade50
-                                    : Colors.white,
-                                borderRadius: BorderRadius.circular(12),
-                              ),
-                              child: _loadingFavorite
-                                  ? const SizedBox(
-                                      width: 20,
-                                      height: 20,
-                                      child: CircularProgressIndicator(
-                                        strokeWidth: 2,
-                                        color: Colors.red,
-                                      ),
-                                    )
-                                  : Row(
-                                      mainAxisSize: MainAxisSize.min,
-                                      children: [
-                                        Icon(
-                                          _isFavorite
-                                              ? Icons.favorite
-                                              : Icons.favorite_border,
-                                          size: 20,
+                                      Text(
+                                        _isFavorite ? "Disimpan" : "Favorite",
+                                        style: TextStyle(
                                           color: _isFavorite
                                               ? Colors.red
                                               : Colors.black87,
                                         ),
-                                        const SizedBox(width: 6),
-                                        Text(
-                                          _isFavorite ? "Disimpan" : "Favorite",
-                                          style: TextStyle(
-                                            color: _isFavorite
-                                                ? Colors.red
-                                                : Colors.black87,
-                                          ),
-                                        ),
-                                      ],
-                                    ),
-                            ),
+                                      ),
+                                    ],
+                                  ),
                           ),
-                        ],
+                        ),
                       ),
                     ),
+
                     const SizedBox(height: 20),
+
                     Padding(
                       padding: const EdgeInsets.symmetric(horizontal: 16),
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
+                          // ── NAMA & HARGA ──
                           Text(
                             nama,
                             style: const TextStyle(
@@ -432,6 +473,8 @@ class _DetailScreenState extends State<DetailScreen> {
                             ),
                           ),
                           const SizedBox(height: 18),
+
+                          // ── INFO PENJUAL ──
                           GestureDetector(
                             onTap: () {
                               Navigator.push(
@@ -506,7 +549,343 @@ class _DetailScreenState extends State<DetailScreen> {
                               ),
                             ),
                           ),
+
                           const SizedBox(height: 20),
+
+                          // ── PERBANDINGAN HARGA INLINE ──
+                          if (parsedLat != null && parsedLng != null)
+                            FutureBuilder<List<Map<String, dynamic>>>(
+                              future: _fetchPerbandingan(
+                                nama,
+                                kategori,
+                                parsedLat,
+                                parsedLng,
+                              ),
+                              builder: (context, snap) {
+                                if (!snap.hasData || snap.data!.isEmpty) {
+                                  return const SizedBox();
+                                }
+
+                                final lainnya = snap.data!
+                                    .where(
+                                      (item) => item['ikanId'] != widget.ikanId,
+                                    )
+                                    .toList();
+
+                                if (lainnya.isEmpty) return const SizedBox();
+
+                                final tampil = lainnya.take(3).toList();
+                                final adaLebih = lainnya.length > 3;
+
+                                return Column(
+                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                  children: [
+                                    Container(
+                                      width: double.infinity,
+                                      padding: const EdgeInsets.all(16),
+                                      decoration: BoxDecoration(
+                                        color: Colors.white,
+                                        borderRadius: BorderRadius.circular(20),
+                                      ),
+                                      child: Column(
+                                        crossAxisAlignment:
+                                            CrossAxisAlignment.start,
+                                        children: [
+                                          // Header
+                                          Row(
+                                            children: [
+                                              Container(
+                                                padding: const EdgeInsets.all(
+                                                  8,
+                                                ),
+                                                decoration: BoxDecoration(
+                                                  color: const Color(
+                                                    0xff6C8EF5,
+                                                  ).withOpacity(0.1),
+                                                  borderRadius:
+                                                      BorderRadius.circular(10),
+                                                ),
+                                                child: const Icon(
+                                                  Icons.compare_arrows,
+                                                  color: Color(0xff6C8EF5),
+                                                  size: 18,
+                                                ),
+                                              ),
+                                              const SizedBox(width: 10),
+                                              Column(
+                                                crossAxisAlignment:
+                                                    CrossAxisAlignment.start,
+                                                children: [
+                                                  const Text(
+                                                    "Perbandingan Harga",
+                                                    style: TextStyle(
+                                                      fontWeight:
+                                                          FontWeight.bold,
+                                                      fontSize: 15,
+                                                    ),
+                                                  ),
+                                                  Text(
+                                                    "Penjual $nama terdekat · 1km",
+                                                    style: const TextStyle(
+                                                      color: Colors.black45,
+                                                      fontSize: 11,
+                                                    ),
+                                                  ),
+                                                ],
+                                              ),
+                                            ],
+                                          ),
+
+                                          const SizedBox(height: 16),
+                                          const Divider(height: 1),
+                                          const SizedBox(height: 14),
+
+                                          // Card per penjual
+                                          ...tampil.map((item) {
+                                            final hargaItem =
+                                                int.tryParse(
+                                                  item['harga'].toString(),
+                                                ) ??
+                                                0;
+                                            final selisih =
+                                                hargaItem - hargaCurrent;
+                                            final gambarItem =
+                                                item['gambar']?.toString() ??
+                                                '';
+
+                                            String labelText;
+                                            Color labelColor;
+                                            IconData labelIcon;
+
+                                            if (selisih < 0) {
+                                              labelText =
+                                                  'Lebih murah ${formatRupiah(selisih.abs())}';
+                                              labelColor = const Color(
+                                                0xFF27AE60,
+                                              );
+                                              labelIcon =
+                                                  Icons.arrow_downward_rounded;
+                                            } else if (selisih > 0) {
+                                              labelText =
+                                                  'Lebih mahal ${formatRupiah(selisih)}';
+                                              labelColor = const Color(
+                                                0xFFE74C3C,
+                                              );
+                                              labelIcon =
+                                                  Icons.arrow_upward_rounded;
+                                            } else {
+                                              labelText = 'Harga sama';
+                                              labelColor = Colors.grey;
+                                              labelIcon = Icons.remove;
+                                            }
+
+                                            return GestureDetector(
+                                              onTap: () => Navigator.push(
+                                                context,
+                                                MaterialPageRoute(
+                                                  builder: (_) => DetailScreen(
+                                                    ikanId: item['ikanId'],
+                                                  ),
+                                                ),
+                                              ),
+                                              child: Container(
+                                                margin: const EdgeInsets.only(
+                                                  bottom: 10,
+                                                ),
+                                                padding: const EdgeInsets.all(
+                                                  12,
+                                                ),
+                                                decoration: BoxDecoration(
+                                                  color: const Color(
+                                                    0xffF5F5F5,
+                                                  ),
+                                                  borderRadius:
+                                                      BorderRadius.circular(14),
+                                                ),
+                                                child: Row(
+                                                  children: [
+                                                    // Avatar / Foto
+                                                    ClipRRect(
+                                                      borderRadius:
+                                                          BorderRadius.circular(
+                                                            12,
+                                                          ),
+                                                      child:
+                                                          gambarItem.isNotEmpty
+                                                          ? Image.memory(
+                                                              base64Decode(
+                                                                gambarItem,
+                                                              ),
+                                                              width: 52,
+                                                              height: 52,
+                                                              fit: BoxFit.cover,
+                                                              errorBuilder:
+                                                                  (
+                                                                    _,
+                                                                    __,
+                                                                    ___,
+                                                                  ) =>
+                                                                      _defaultAvatar(),
+                                                            )
+                                                          : _defaultAvatar(),
+                                                    ),
+                                                    const SizedBox(width: 12),
+                                                    // Info teks
+                                                    Expanded(
+                                                      child: Column(
+                                                        crossAxisAlignment:
+                                                            CrossAxisAlignment
+                                                                .start,
+                                                        children: [
+                                                          Text(
+                                                            item['username'] ??
+                                                                '-',
+                                                            style:
+                                                                const TextStyle(
+                                                                  fontWeight:
+                                                                      FontWeight
+                                                                          .w600,
+                                                                  fontSize: 13,
+                                                                ),
+                                                            maxLines: 1,
+                                                            overflow:
+                                                                TextOverflow
+                                                                    .ellipsis,
+                                                          ),
+                                                          const SizedBox(
+                                                            height: 3,
+                                                          ),
+                                                          Text(
+                                                            formatRupiah(
+                                                              hargaItem,
+                                                            ),
+                                                            style:
+                                                                const TextStyle(
+                                                                  fontWeight:
+                                                                      FontWeight
+                                                                          .bold,
+                                                                  fontSize: 15,
+                                                                  color: Color(
+                                                                    0xff6C8EF5,
+                                                                  ),
+                                                                ),
+                                                          ),
+                                                          const SizedBox(
+                                                            height: 4,
+                                                          ),
+                                                          Row(
+                                                            children: [
+                                                              Icon(
+                                                                labelIcon,
+                                                                size: 12,
+                                                                color:
+                                                                    labelColor,
+                                                              ),
+                                                              const SizedBox(
+                                                                width: 3,
+                                                              ),
+                                                              Text(
+                                                                labelText,
+                                                                style: TextStyle(
+                                                                  fontSize: 11,
+                                                                  color:
+                                                                      labelColor,
+                                                                  fontWeight:
+                                                                      FontWeight
+                                                                          .w500,
+                                                                ),
+                                                              ),
+                                                            ],
+                                                          ),
+                                                        ],
+                                                      ),
+                                                    ),
+                                                    const Icon(
+                                                      Icons.chevron_right,
+                                                      color: Colors.black26,
+                                                      size: 18,
+                                                    ),
+                                                  ],
+                                                ),
+                                              ),
+                                            );
+                                          }),
+
+                                          // Tombol lihat lainnya (hanya jika > 3)
+                                          if (adaLebih) ...[
+                                            const SizedBox(height: 4),
+                                            GestureDetector(
+                                              onTap: () => Navigator.push(
+                                                context,
+                                                MaterialPageRoute(
+                                                  builder: (_) =>
+                                                      PerbandinganScreen(
+                                                        namaIkan: nama,
+                                                        kategoriIkan: kategori,
+                                                        userLatitude: parsedLat,
+                                                        userLongitude:
+                                                            parsedLng,
+                                                        currentIkanId:
+                                                            widget.ikanId,
+                                                        currentHarga:
+                                                            hargaCurrent,
+                                                      ),
+                                                ),
+                                              ),
+                                              child: Container(
+                                                width: double.infinity,
+                                                padding:
+                                                    const EdgeInsets.symmetric(
+                                                      vertical: 12,
+                                                    ),
+                                                decoration: BoxDecoration(
+                                                  color: const Color(
+                                                    0xff6C8EF5,
+                                                  ).withOpacity(0.07),
+                                                  borderRadius:
+                                                      BorderRadius.circular(12),
+                                                  border: Border.all(
+                                                    color: const Color(
+                                                      0xff6C8EF5,
+                                                    ).withOpacity(0.25),
+                                                  ),
+                                                ),
+                                                child: const Row(
+                                                  mainAxisAlignment:
+                                                      MainAxisAlignment.center,
+                                                  children: [
+                                                    Text(
+                                                      "Lihat perbandingan dari penjual lainnya",
+                                                      style: TextStyle(
+                                                        color: Color(
+                                                          0xff6C8EF5,
+                                                        ),
+                                                        fontWeight:
+                                                            FontWeight.w600,
+                                                        fontSize: 13,
+                                                      ),
+                                                    ),
+                                                    SizedBox(width: 4),
+                                                    Icon(
+                                                      Icons.arrow_forward_ios,
+                                                      color: Color(0xff6C8EF5),
+                                                      size: 12,
+                                                    ),
+                                                  ],
+                                                ),
+                                              ),
+                                            ),
+                                          ],
+                                        ],
+                                      ),
+                                    ),
+                                    const SizedBox(height: 20),
+                                  ],
+                                );
+                              },
+                            ),
+
+                          // ── LOKASI ──
                           Container(
                             width: double.infinity,
                             padding: const EdgeInsets.all(16),
@@ -525,78 +904,101 @@ class _DetailScreenState extends State<DetailScreen> {
                                   ),
                                 ),
                                 const SizedBox(height: 12),
-                                Row(
-                                  children: [
-                                    const Icon(
-                                      Icons.location_on,
-                                      color: Colors.red,
-                                    ),
-                                    const SizedBox(width: 6),
-                                    Expanded(
-                                      child: Text(
-                                        lokasiText,
-                                        style: const TextStyle(
-                                          color: Colors.black87,
-                                        ),
-                                      ),
-                                    ),
-                                  ],
-                                ),
-                                const SizedBox(height: 14),
-                                SizedBox(
-                                  width: double.infinity,
-                                  height: 50,
-                                  child: ElevatedButton.icon(
-                                    style: ElevatedButton.styleFrom(
-                                      backgroundColor: const Color(0xff6C8EF5),
-                                      shape: RoundedRectangleBorder(
-                                        borderRadius: BorderRadius.circular(14),
-                                      ),
-                                    ),
-                                    onPressed:
-                                        (latitude != null && longitude != null)
-                                        ? () {
-                                            double lat = (latitude is num)
-                                                ? latitude.toDouble()
-                                                : double.tryParse(
-                                                        latitude.toString(),
-                                                      ) ??
-                                                      0;
-                                            double lng = (longitude is num)
-                                                ? longitude.toDouble()
-                                                : double.tryParse(
-                                                        longitude.toString(),
-                                                      ) ??
-                                                      0;
-                                            if (lat != 0 && lng != 0) {
-                                              openMap(lat, lng);
-                                            } else {
-                                              ScaffoldMessenger.of(
-                                                context,
-                                              ).showSnackBar(
-                                                const SnackBar(
-                                                  content: Text(
-                                                    'Koordinat lokasi tidak valid',
-                                                  ),
+                                InkWell(
+                                  onTap: (latitude != null && longitude != null)
+                                      ? () {
+                                          double lat = (latitude is num)
+                                              ? latitude.toDouble()
+                                              : double.tryParse(
+                                                      latitude.toString(),
+                                                    ) ??
+                                                    0;
+                                          double lng = (longitude is num)
+                                              ? longitude.toDouble()
+                                              : double.tryParse(
+                                                      longitude.toString(),
+                                                    ) ??
+                                                    0;
+                                          if (lat != 0 && lng != 0) {
+                                            openMap(lat, lng);
+                                          } else {
+                                            ScaffoldMessenger.of(
+                                              context,
+                                            ).showSnackBar(
+                                              const SnackBar(
+                                                content: Text(
+                                                  'Koordinat lokasi tidak valid',
                                                 ),
-                                              );
-                                            }
+                                              ),
+                                            );
                                           }
-                                        : null,
-                                    icon: const Icon(
-                                      Icons.map,
-                                      color: Colors.white,
+                                        }
+                                      : null,
+                                  borderRadius: BorderRadius.circular(12),
+                                  child: Padding(
+                                    padding: const EdgeInsets.symmetric(
+                                      vertical: 10,
                                     ),
-                                    label: const Text(
-                                      "Buka Google Maps",
-                                      style: TextStyle(color: Colors.white),
+                                    child: Row(
+                                      children: [
+                                        Container(
+                                          width: 36,
+                                          height: 36,
+                                          decoration: BoxDecoration(
+                                            color: const Color(0xFFEEF1FE),
+                                            borderRadius: BorderRadius.circular(
+                                              10,
+                                            ),
+                                          ),
+                                          child: const Icon(
+                                            Icons.map_outlined,
+                                            color: Color(0xff6C8EF5),
+                                            size: 18,
+                                          ),
+                                        ),
+                                        const SizedBox(width: 12),
+                                        Expanded(
+                                          child: Column(
+                                            crossAxisAlignment:
+                                                CrossAxisAlignment.start,
+                                            children: [
+                                              Text(
+                                                lokasiText,
+                                                style: const TextStyle(
+                                                  fontSize: 13,
+                                                  fontWeight: FontWeight.w500,
+                                                  color: Colors.black87,
+                                                ),
+                                                maxLines: 1,
+                                                overflow: TextOverflow.ellipsis,
+                                              ),
+                                              const SizedBox(height: 2),
+                                              const Text(
+                                                "Buka Google Maps",
+                                                style: TextStyle(
+                                                  fontSize: 11,
+                                                  color: Color(0xff6C8EF5),
+                                                ),
+                                              ),
+                                            ],
+                                          ),
+                                        ),
+                                        const Icon(
+                                          Icons.open_in_new_rounded,
+                                          color: Color(0xff6C8EF5),
+                                          size: 16,
+                                        ),
+                                      ],
                                     ),
                                   ),
                                 ),
                               ],
                             ),
                           ),
+
                           const SizedBox(height: 20),
+
+                          // ── DESKRIPSI ──
                           if (deskripsi.toString().isNotEmpty)
                             Container(
                               width: double.infinity,
@@ -620,7 +1022,11 @@ class _DetailScreenState extends State<DetailScreen> {
                                 ],
                               ),
                             ),
-                          const SizedBox(height: 20),
+
+                          if (deskripsi.toString().isNotEmpty)
+                            const SizedBox(height: 20),
+
+                          // ── DIPOSTING ──
                           Container(
                             width: double.infinity,
                             padding: const EdgeInsets.all(16),
@@ -647,6 +1053,7 @@ class _DetailScreenState extends State<DetailScreen> {
                               ],
                             ),
                           ),
+
                           const SizedBox(height: 60),
                         ],
                       ),
@@ -662,6 +1069,7 @@ class _DetailScreenState extends State<DetailScreen> {
   }
 }
 
+// ── FULL IMAGE SCREEN ──
 class _FullImageScreen extends StatelessWidget {
   final String imageBase64;
   const _FullImageScreen({required this.imageBase64});
@@ -682,6 +1090,7 @@ class _FullImageScreen extends StatelessWidget {
   }
 }
 
+// ── KOMENTAR SHEET ──
 class KomentarSheet extends StatefulWidget {
   final String ikanId;
 
