@@ -158,35 +158,30 @@ class _ProfileScreenState extends State<ProfileScreen>
                       children: [
                         GestureDetector(
                           onTap: () {
-                            Navigator.push(
-                              context,
-                              MaterialPageRoute(
-                                builder: (_) => const SettingsScreen(),
-                              ),
-                            );
+                            if (profileImageBytes != null) {
+                              Navigator.push(
+                                context,
+                                MaterialPageRoute(
+                                  builder: (_) => FullImageScreenBytes(
+                                    imageBytes: profileImageBytes!,
+                                  ),
+                                ),
+                              );
+                            }
                           },
-                          child: Container(
-                            decoration: BoxDecoration(
-                              shape: BoxShape.circle,
-                              border: Border.all(
-                                color: const Color(0xFF5E7AC4),
-                                width: 3,
-                              ),
-                            ),
-                            child: CircleAvatar(
-                              radius: 50,
-                              backgroundColor: Colors.grey.shade200,
-                              backgroundImage: profileImageBytes != null
-                                  ? MemoryImage(profileImageBytes)
-                                  : null,
-                              child: profileImageBytes == null
-                                  ? Icon(
-                                      Icons.person,
-                                      size: 50,
-                                      color: Colors.grey.shade400,
-                                    )
-                                  : null,
-                            ),
+                          child: CircleAvatar(
+                            radius: 50,
+                            backgroundColor: Colors.grey.shade200,
+                            backgroundImage: profileImageBytes != null
+                                ? MemoryImage(profileImageBytes)
+                                : null,
+                            child: profileImageBytes == null
+                                ? Icon(
+                                    Icons.person,
+                                    size: 50,
+                                    color: Colors.grey.shade400,
+                                  )
+                                : null,
                           ),
                         ),
                         const SizedBox(height: 12),
@@ -664,117 +659,163 @@ class _FavoriteTab extends StatelessWidget {
             final kategori = item['kategori'] ?? '';
             final gambar = item['gambar'] ?? '';
 
-            return GestureDetector(
-              onTap: () {
-                Navigator.push(
-                  context,
-                  MaterialPageRoute(
-                    builder: (_) => DetailScreen(ikanId: ikanId),
-                  ),
-                );
-              },
-              child: Card(
-                elevation: 1,
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(12),
-                ),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Stack(
+            // Validasi apakah post masih ada di database
+            return FutureBuilder<DocumentSnapshot>(
+              future: FirebaseFirestore.instance
+                  .collection('ikan')
+                  .doc(ikanId)
+                  .get(),
+              builder: (context, postSnapshot) {
+                // Jika post tidak ada, auto-delete dari favorites
+                if (postSnapshot.hasData && !postSnapshot.data!.exists) {
+                  WidgetsBinding.instance.addPostFrameCallback((_) {
+                    FirebaseFirestore.instance
+                        .collection('users')
+                        .doc(uid)
+                        .collection('favorites')
+                        .doc(ikanId)
+                        .delete();
+                  });
+                  return const SizedBox.shrink();
+                }
+
+                // Post masih ada, tampilkan card
+                return GestureDetector(
+                  onTap: () {
+                    Navigator.push(
+                      context,
+                      MaterialPageRoute(
+                        builder: (_) => DetailScreen(ikanId: ikanId),
+                      ),
+                    );
+                  },
+                  child: Card(
+                    elevation: 1,
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        ClipRRect(
-                          borderRadius: const BorderRadius.vertical(
-                            top: Radius.circular(12),
-                          ),
-                          child: SizedBox(
-                            height: 100,
-                            width: double.infinity,
-                            child: gambar.toString().isNotEmpty
-                                ? Image.memory(
-                                    base64Decode(gambar),
-                                    fit: BoxFit.cover,
-                                    errorBuilder: (_, __, ___) => Container(
-                                      color: Colors.grey.shade200,
-                                      child: Icon(
-                                        Icons.image_not_supported,
-                                        color: Colors.grey.shade400,
-                                      ),
-                                    ),
-                                  )
-                                : Container(
-                                    color: Colors.grey.shade200,
-                                    child: Icon(
-                                      Icons.image_not_supported,
-                                      color: Colors.grey.shade400,
-                                    ),
-                                  ),
-                          ),
-                        ),
-                        Positioned(
-                          top: 6,
-                          right: 6,
-                          child: GestureDetector(
-                            onTap: () => _konfirmasiHapus(context, ikanId),
-                            child: Container(
-                              padding: const EdgeInsets.all(4),
-                              decoration: BoxDecoration(
-                                color: Colors.white.withOpacity(0.9),
-                                shape: BoxShape.circle,
+                        Stack(
+                          children: [
+                            ClipRRect(
+                              borderRadius: const BorderRadius.vertical(
+                                top: Radius.circular(12),
                               ),
-                              child: const Icon(
-                                Icons.favorite,
-                                color: Colors.red,
-                                size: 14,
+                              child: SizedBox(
+                                height: 100,
+                                width: double.infinity,
+                                child: gambar.toString().isNotEmpty
+                                    ? Image.memory(
+                                        base64Decode(gambar),
+                                        fit: BoxFit.cover,
+                                        errorBuilder: (_, __, ___) => Container(
+                                          color: Colors.grey.shade200,
+                                          child: Icon(
+                                            Icons.image_not_supported,
+                                            color: Colors.grey.shade400,
+                                          ),
+                                        ),
+                                      )
+                                    : Container(
+                                        color: Colors.grey.shade200,
+                                        child: Icon(
+                                          Icons.image_not_supported,
+                                          color: Colors.grey.shade400,
+                                        ),
+                                      ),
                               ),
                             ),
+                            Positioned(
+                              top: 6,
+                              right: 6,
+                              child: GestureDetector(
+                                onTap: () => _konfirmasiHapus(context, ikanId),
+                                child: Container(
+                                  padding: const EdgeInsets.all(4),
+                                  decoration: BoxDecoration(
+                                    color: Colors.white.withOpacity(0.9),
+                                    shape: BoxShape.circle,
+                                  ),
+                                  child: const Icon(
+                                    Icons.favorite,
+                                    color: Colors.red,
+                                    size: 14,
+                                  ),
+                                ),
+                              ),
+                            ),
+                          ],
+                        ),
+                        Padding(
+                          padding: const EdgeInsets.all(8),
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Text(
+                                nama,
+                                maxLines: 1,
+                                overflow: TextOverflow.ellipsis,
+                                style: const TextStyle(
+                                  fontWeight: FontWeight.bold,
+                                  fontSize: 12,
+                                ),
+                              ),
+                              const SizedBox(height: 3),
+                              Text(
+                                kategori,
+                                style: TextStyle(
+                                  color: Colors.grey.shade600,
+                                  fontSize: 11,
+                                ),
+                              ),
+                              const SizedBox(height: 4),
+                              Text(
+                                formatRupiah(harga),
+                                maxLines: 1,
+                                overflow: TextOverflow.ellipsis,
+                                style: const TextStyle(
+                                  color: Color(0xFF5E7AC4),
+                                  fontSize: 12,
+                                  fontWeight: FontWeight.bold,
+                                ),
+                              ),
+                            ],
                           ),
                         ),
                       ],
                     ),
-                    Padding(
-                      padding: const EdgeInsets.all(8),
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Text(
-                            nama,
-                            maxLines: 1,
-                            overflow: TextOverflow.ellipsis,
-                            style: const TextStyle(
-                              fontWeight: FontWeight.bold,
-                              fontSize: 12,
-                            ),
-                          ),
-                          const SizedBox(height: 3),
-                          Text(
-                            kategori,
-                            style: TextStyle(
-                              color: Colors.grey.shade600,
-                              fontSize: 11,
-                            ),
-                          ),
-                          const SizedBox(height: 4),
-                          Text(
-                            formatRupiah(harga),
-                            maxLines: 1,
-                            overflow: TextOverflow.ellipsis,
-                            style: const TextStyle(
-                              color: Color(0xFF5E7AC4),
-                              fontSize: 12,
-                              fontWeight: FontWeight.bold,
-                            ),
-                          ),
-                        ],
-                      ),
-                    ),
-                  ],
-                ),
-              ),
+                  ),
+                );
+              },
             );
           },
         );
       },
+    );
+  }
+}
+
+class FullImageScreenBytes extends StatelessWidget {
+  final Uint8List imageBytes;
+
+  const FullImageScreenBytes({super.key, required this.imageBytes});
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      backgroundColor: Colors.black,
+      appBar: AppBar(
+        backgroundColor: Colors.black,
+        elevation: 0,
+        leading: GestureDetector(
+          onTap: () => Navigator.pop(context),
+          child: const Icon(Icons.arrow_back, color: Colors.white),
+        ),
+        automaticallyImplyLeading: false,
+      ),
+      body: Center(child: Image.memory(imageBytes, fit: BoxFit.contain)),
     );
   }
 }
