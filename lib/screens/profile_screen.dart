@@ -151,137 +151,41 @@ class _ProfileScreenState extends State<ProfileScreen>
             headerSliverBuilder: (context, innerBoxIsScrolled) {
               return [
                 SliverToBoxAdapter(
-                  child: Column(
-                    children: [
-                      Container(
-                        padding: const EdgeInsets.all(24),
-                        color: Colors.white,
-                        child: Column(
+                  child: Container(
+                    padding: const EdgeInsets.all(24),
+                    color: Colors.white,
+                    child: Column(
+                      children: [
+                        Stack(
                           children: [
-                            Stack(
-                              children: [
-                                Container(
-                                  decoration: BoxDecoration(
-                                    shape: BoxShape.circle,
-                                    border: Border.all(
-                                      color: const Color(0xFF5E7AC4),
-                                      width: 3,
-                                    ),
-                                  ),
-                                  child: CircleAvatar(
-                                    radius: 50,
-                                    backgroundColor: Colors.grey.shade200,
-                                    backgroundImage: profileImageBytes != null
-                                        ? MemoryImage(profileImageBytes)
-                                        : null,
-                                    child: profileImageBytes == null
-                                        ? Icon(
-                                            Icons.person,
-                                            size: 50,
-                                            color: Colors.grey.shade400,
-                                          )
-                                        : null,
-                                  ),
+                            Container(
+                              decoration: BoxDecoration(
+                                shape: BoxShape.circle,
+                                border: Border.all(
+                                  color: const Color(0xFF5E7AC4),
+                                  width: 3,
                                 ),
-                                Positioned(
-                                  bottom: 0,
-                                  right: 0,
-                                  child: GestureDetector(
-                                    onTap: () {
-                                      Navigator.push(
-                                        context,
-                                        MaterialPageRoute(
-                                          builder: (_) =>
-                                              const SettingsScreen(),
-                                        ),
-                                      );
-                                    },
-                                    child: Container(
-                                      padding: const EdgeInsets.all(6),
-                                      decoration: const BoxDecoration(
-                                        shape: BoxShape.circle,
-                                        color: Color(0xFF5E7AC4),
-                                      ),
-                                      child: const Icon(
-                                        Icons.camera_alt,
-                                        color: Colors.white,
-                                        size: 16,
-                                      ),
-                                    ),
-                                  ),
-                                ),
-                              ],
-                            ),
-                            const SizedBox(height: 12),
-                            Text(
-                              displayName,
-                              style: const TextStyle(
-                                fontSize: 20,
-                                fontWeight: FontWeight.bold,
                               ),
-                            ),
-                            const SizedBox(height: 4),
-                            Text(
-                              occupation,
-                              style: TextStyle(
-                                fontSize: 13,
-                                color: Colors.grey.shade600,
-                              ),
-                            ),
-                            const SizedBox(height: 8),
-                            Row(
-                              mainAxisAlignment: MainAxisAlignment.center,
-                              children: [
-                                const Icon(
-                                  Icons.location_on,
-                                  size: 14,
-                                  color: Colors.grey,
-                                ),
-                                const SizedBox(width: 4),
-                                Text(
-                                  location,
-                                  style: TextStyle(
-                                    color: Colors.grey.shade600,
-                                    fontSize: 12,
-                                  ),
-                                ),
-                              ],
-                            ),
-                            const SizedBox(height: 16),
-                            Row(
-                              mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-                              children: [
-                                _statItem(
-                                  label: 'Followers',
-                                  value: followerCount.toString(),
-                                ),
-                                _dividerStat(),
-                                _statItemStream(
-                                  label: 'Postingan',
-                                  stream: FirebaseFirestore.instance
-                                      .collection('ikan')
-                                      .where(
-                                        'userId',
-                                        isEqualTo: currentUser!.uid,
+                              child: CircleAvatar(
+                                radius: 50,
+                                backgroundColor: Colors.grey.shade200,
+                                backgroundImage: profileImageBytes != null
+                                    ? MemoryImage(profileImageBytes)
+                                    : null,
+                                child: profileImageBytes == null
+                                    ? Icon(
+                                        Icons.person,
+                                        size: 50,
+                                        color: Colors.grey.shade400,
                                       )
-                                      .snapshots(),
-                                ),
-                                _dividerStat(),
-                                _statItemStream(
-                                  label: 'Following',
-                                  stream: FirebaseFirestore.instance
-                                      .collection('users')
-                                      .doc(currentUser!.uid)
-                                      .collection('langganan')
-                                      .snapshots(),
-                                ),
-                              ],
+                                    : null,
+                              ),
                             ),
-                            const SizedBox(height: 16),
-                            SizedBox(
-                              width: double.infinity,
-                              child: ElevatedButton(
-                                onPressed: () {
+                            Positioned(
+                              bottom: 0,
+                              right: 0,
+                              child: GestureDetector(
+                                onTap: () {
                                   Navigator.push(
                                     context,
                                     MaterialPageRoute(
@@ -289,28 +193,114 @@ class _ProfileScreenState extends State<ProfileScreen>
                                     ),
                                   );
                                 },
-                                style: ElevatedButton.styleFrom(
-                                  backgroundColor: const Color(0xFF5E7AC4),
-                                  padding: const EdgeInsets.symmetric(
-                                    vertical: 12,
+                                child: Container(
+                                  padding: const EdgeInsets.all(6),
+                                  decoration: const BoxDecoration(
+                                    shape: BoxShape.circle,
+                                    color: Color(0xFF5E7AC4),
                                   ),
-                                  shape: RoundedRectangleBorder(
-                                    borderRadius: BorderRadius.circular(10),
-                                  ),
-                                ),
-                                child: const Text(
-                                  'Pengaturan Profil',
-                                  style: TextStyle(
+                                  child: const Icon(
+                                    Icons.camera_alt,
                                     color: Colors.white,
-                                    fontWeight: FontWeight.bold,
+                                    size: 16,
                                   ),
                                 ),
                               ),
                             ),
                           ],
                         ),
-                      ),
-                    ],
+                        const SizedBox(height: 12),
+                        Text(
+                          displayName,
+                          style: const TextStyle(
+                            fontSize: 20,
+                            fontWeight: FontWeight.bold,
+                          ),
+                        ),
+                        const SizedBox(height: 4),
+                        Text(
+                          occupation,
+                          style: TextStyle(
+                            fontSize: 13,
+                            color: Colors.grey.shade600,
+                          ),
+                        ),
+                        const SizedBox(height: 8),
+                        Row(
+                          mainAxisAlignment: MainAxisAlignment.center,
+                          children: [
+                            const Icon(
+                              Icons.location_on,
+                              size: 14,
+                              color: Colors.grey,
+                            ),
+                            const SizedBox(width: 4),
+                            Text(
+                              location,
+                              style: TextStyle(
+                                color: Colors.grey.shade600,
+                                fontSize: 12,
+                              ),
+                            ),
+                          ],
+                        ),
+                        const SizedBox(height: 16),
+                        Row(
+                          mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+                          children: [
+                            _statItem(
+                              label: 'Followers',
+                              value: followerCount.toString(),
+                            ),
+                            _dividerStat(),
+                            _statItemStream(
+                              label: 'Postingan',
+                              stream: FirebaseFirestore.instance
+                                  .collection('ikan')
+                                  .where('userId', isEqualTo: currentUser!.uid)
+                                  .snapshots(),
+                            ),
+                            _dividerStat(),
+                            _statItemStream(
+                              label: 'Following',
+                              stream: FirebaseFirestore.instance
+                                  .collection('users')
+                                  .doc(currentUser!.uid)
+                                  .collection('langganan')
+                                  .snapshots(),
+                            ),
+                          ],
+                        ),
+                        const SizedBox(height: 16),
+                        SizedBox(
+                          width: double.infinity,
+                          child: ElevatedButton(
+                            onPressed: () {
+                              Navigator.push(
+                                context,
+                                MaterialPageRoute(
+                                  builder: (_) => const SettingsScreen(),
+                                ),
+                              );
+                            },
+                            style: ElevatedButton.styleFrom(
+                              backgroundColor: const Color(0xFF5E7AC4),
+                              padding: const EdgeInsets.symmetric(vertical: 12),
+                              shape: RoundedRectangleBorder(
+                                borderRadius: BorderRadius.circular(10),
+                              ),
+                            ),
+                            child: const Text(
+                              'Pengaturan Profil',
+                              style: TextStyle(
+                                color: Colors.white,
+                                fontWeight: FontWeight.bold,
+                              ),
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
                   ),
                 ),
                 SliverPersistentHeader(
@@ -478,9 +468,9 @@ class _PostinganTab extends StatelessWidget {
           itemCount: posts.length,
           gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
             crossAxisCount: 2,
-            crossAxisSpacing: 12,
-            mainAxisSpacing: 12,
-            childAspectRatio: 0.72,
+            crossAxisSpacing: 10,
+            mainAxisSpacing: 10,
+            childAspectRatio: 0.75,
           ),
           itemBuilder: (context, index) {
             final postData = posts[index].data() as Map<String, dynamic>;
@@ -500,39 +490,40 @@ class _PostinganTab extends StatelessWidget {
                 );
               },
               child: Card(
-                elevation: 2,
+                elevation: 1,
                 shape: RoundedRectangleBorder(
                   borderRadius: BorderRadius.circular(12),
                 ),
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Expanded(
-                      child: ClipRRect(
-                        borderRadius: const BorderRadius.vertical(
-                          top: Radius.circular(12),
-                        ),
-                        child: Container(
-                          width: double.infinity,
-                          color: Colors.grey.shade200,
-                          child: imageUrl.isNotEmpty
-                              ? Image.memory(
-                                  base64Decode(imageUrl),
-                                  fit: BoxFit.cover,
-                                  errorBuilder: (_, __, ___) => Icon(
-                                    Icons.image_not_supported,
-                                    color: Colors.grey.shade400,
-                                  ),
-                                )
-                              : Icon(
+                    ClipRRect(
+                      borderRadius: const BorderRadius.vertical(
+                        top: Radius.circular(12),
+                      ),
+                      child: SizedBox(
+                        height: 110,
+                        width: double.infinity,
+                        child: imageUrl.isNotEmpty
+                            ? Image.memory(
+                                base64Decode(imageUrl),
+                                fit: BoxFit.cover,
+                                errorBuilder: (_, __, ___) => Icon(
                                   Icons.image_not_supported,
                                   color: Colors.grey.shade400,
                                 ),
-                        ),
+                              )
+                            : Container(
+                                color: Colors.grey.shade200,
+                                child: Icon(
+                                  Icons.image_not_supported,
+                                  color: Colors.grey.shade400,
+                                ),
+                              ),
                       ),
                     ),
                     Padding(
-                      padding: const EdgeInsets.all(10),
+                      padding: const EdgeInsets.all(8),
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
@@ -542,10 +533,10 @@ class _PostinganTab extends StatelessWidget {
                             overflow: TextOverflow.ellipsis,
                             style: const TextStyle(
                               fontWeight: FontWeight.bold,
-                              fontSize: 13,
+                              fontSize: 12,
                             ),
                           ),
-                          const SizedBox(height: 4),
+                          const SizedBox(height: 3),
                           Text(
                             category,
                             style: TextStyle(
@@ -553,12 +544,14 @@ class _PostinganTab extends StatelessWidget {
                               fontSize: 11,
                             ),
                           ),
-                          const SizedBox(height: 6),
+                          const SizedBox(height: 4),
                           Text(
                             formatRupiah(price),
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
                             style: const TextStyle(
                               color: Color(0xFF5E7AC4),
-                              fontSize: 13,
+                              fontSize: 12,
                               fontWeight: FontWeight.bold,
                             ),
                           ),
@@ -589,6 +582,47 @@ class _FavoriteTab extends StatelessWidget {
       decimalDigits: 0,
     );
     return format.format(number);
+  }
+
+  Future<void> _konfirmasiHapus(BuildContext context, String ikanId) async {
+    final konfirmasi = await showDialog<bool>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+        title: const Text(
+          'Hapus Favorite?',
+          style: TextStyle(fontWeight: FontWeight.bold),
+        ),
+        content: const Text(
+          'Apakah kamu yakin ingin menghapus ikan ini dari favorite?',
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(ctx, false),
+            child: const Text('Batal', style: TextStyle(color: Colors.black54)),
+          ),
+          ElevatedButton(
+            style: ElevatedButton.styleFrom(
+              backgroundColor: Colors.red,
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(8),
+              ),
+            ),
+            onPressed: () => Navigator.pop(ctx, true),
+            child: const Text('Hapus', style: TextStyle(color: Colors.white)),
+          ),
+        ],
+      ),
+    );
+
+    if (konfirmasi == true) {
+      await FirebaseFirestore.instance
+          .collection('users')
+          .doc(uid)
+          .collection('favorites')
+          .doc(ikanId)
+          .delete();
+    }
   }
 
   @override
@@ -638,9 +672,9 @@ class _FavoriteTab extends StatelessWidget {
           itemCount: favorites.length,
           gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
             crossAxisCount: 2,
-            crossAxisSpacing: 12,
-            mainAxisSpacing: 12,
-            childAspectRatio: 0.72,
+            crossAxisSpacing: 10,
+            mainAxisSpacing: 10,
+            childAspectRatio: 0.75,
           ),
           itemBuilder: (context, index) {
             final item = favorites[index].data() as Map<String, dynamic>;
@@ -660,69 +694,66 @@ class _FavoriteTab extends StatelessWidget {
                 );
               },
               child: Card(
-                elevation: 2,
+                elevation: 1,
                 shape: RoundedRectangleBorder(
                   borderRadius: BorderRadius.circular(12),
                 ),
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Expanded(
-                      child: Stack(
-                        children: [
-                          ClipRRect(
-                            borderRadius: const BorderRadius.vertical(
-                              top: Radius.circular(12),
-                            ),
-                            child: Container(
-                              width: double.infinity,
-                              color: Colors.grey.shade200,
-                              child: gambar.toString().isNotEmpty
-                                  ? Image.memory(
-                                      base64Decode(gambar),
-                                      fit: BoxFit.cover,
-                                      errorBuilder: (_, __, ___) => Icon(
+                    Stack(
+                      children: [
+                        ClipRRect(
+                          borderRadius: const BorderRadius.vertical(
+                            top: Radius.circular(12),
+                          ),
+                          child: SizedBox(
+                            height: 110,
+                            width: double.infinity,
+                            child: gambar.toString().isNotEmpty
+                                ? Image.memory(
+                                    base64Decode(gambar),
+                                    fit: BoxFit.cover,
+                                    errorBuilder: (_, __, ___) => Container(
+                                      color: Colors.grey.shade200,
+                                      child: Icon(
                                         Icons.image_not_supported,
                                         color: Colors.grey.shade400,
                                       ),
-                                    )
-                                  : Icon(
+                                    ),
+                                  )
+                                : Container(
+                                    color: Colors.grey.shade200,
+                                    child: Icon(
                                       Icons.image_not_supported,
                                       color: Colors.grey.shade400,
                                     ),
-                            ),
+                                  ),
                           ),
-                          Positioned(
-                            top: 8,
-                            right: 8,
-                            child: GestureDetector(
-                              onTap: () async {
-                                await FirebaseFirestore.instance
-                                    .collection('users')
-                                    .doc(uid)
-                                    .collection('favorites')
-                                    .doc(ikanId)
-                                    .delete();
-                              },
-                              child: Container(
-                                padding: const EdgeInsets.all(5),
-                                decoration: BoxDecoration(
-                                  color: Colors.white.withOpacity(0.9),
-                                  shape: BoxShape.circle,
-                                ),
-                                child: const Icon(
-                                  Icons.favorite,
-                                  color: Colors.red,
-                                  size: 16,
-                                ),
+                        ),
+                        Positioned(
+                          top: 6,
+                          right: 6,
+                          child: GestureDetector(
+                            onTap: () => _konfirmasiHapus(context, ikanId),
+                            child: Container(
+                              padding: const EdgeInsets.all(4),
+                              decoration: BoxDecoration(
+                                color: Colors.white.withOpacity(0.9),
+                                shape: BoxShape.circle,
+                              ),
+                              child: const Icon(
+                                Icons.favorite,
+                                color: Colors.red,
+                                size: 14,
                               ),
                             ),
                           ),
-                        ],
-                      ),
+                        ),
+                      ],
                     ),
                     Padding(
-                      padding: const EdgeInsets.all(10),
+                      padding: const EdgeInsets.all(8),
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
@@ -732,10 +763,10 @@ class _FavoriteTab extends StatelessWidget {
                             overflow: TextOverflow.ellipsis,
                             style: const TextStyle(
                               fontWeight: FontWeight.bold,
-                              fontSize: 13,
+                              fontSize: 12,
                             ),
                           ),
-                          const SizedBox(height: 4),
+                          const SizedBox(height: 3),
                           Text(
                             kategori,
                             style: TextStyle(
@@ -743,12 +774,14 @@ class _FavoriteTab extends StatelessWidget {
                               fontSize: 11,
                             ),
                           ),
-                          const SizedBox(height: 6),
+                          const SizedBox(height: 4),
                           Text(
                             formatRupiah(harga),
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
                             style: const TextStyle(
                               color: Color(0xFF5E7AC4),
-                              fontSize: 13,
+                              fontSize: 12,
                               fontWeight: FontWeight.bold,
                             ),
                           ),
