@@ -315,7 +315,7 @@ class _DetailScreenState extends State<DetailScreen> {
                           const Text(
                             "Detail",
                             style: TextStyle(
-                              fontSize: 18,
+                              fontSize: 16,
                               fontWeight: FontWeight.bold,
                             ),
                           ),
@@ -450,7 +450,7 @@ class _DetailScreenState extends State<DetailScreen> {
                           Text(
                             nama,
                             style: const TextStyle(
-                              fontSize: 28,
+                              fontSize: 20,
                               fontWeight: FontWeight.bold,
                             ),
                           ),
@@ -460,7 +460,7 @@ class _DetailScreenState extends State<DetailScreen> {
                             style: const TextStyle(
                               color: Color(0xFF6C8EF5),
                               fontWeight: FontWeight.w600,
-                              fontSize: 16,
+                              fontSize: 14,
                             ),
                           ),
                           const SizedBox(height: 12),
@@ -468,7 +468,7 @@ class _DetailScreenState extends State<DetailScreen> {
                             "${formatRupiah(harga)} / Kg",
                             style: const TextStyle(
                               color: Color(0xff6C8EF5),
-                              fontSize: 22,
+                              fontSize: 16,
                               fontWeight: FontWeight.bold,
                             ),
                           ),
@@ -502,7 +502,7 @@ class _DetailScreenState extends State<DetailScreen> {
                                     "Info Penjual",
                                     style: TextStyle(
                                       fontWeight: FontWeight.bold,
-                                      fontSize: 18,
+                                      fontSize: 14,
                                     ),
                                   ),
                                   const SizedBox(height: 14),
@@ -526,7 +526,7 @@ class _DetailScreenState extends State<DetailScreen> {
                                               username,
                                               style: const TextStyle(
                                                 fontWeight: FontWeight.bold,
-                                                fontSize: 16,
+                                                fontSize: 14,
                                               ),
                                             ),
                                             const SizedBox(height: 4),
@@ -621,14 +621,14 @@ class _DetailScreenState extends State<DetailScreen> {
                                                     style: TextStyle(
                                                       fontWeight:
                                                           FontWeight.bold,
-                                                      fontSize: 15,
+                                                      fontSize: 14,
                                                     ),
                                                   ),
                                                   Text(
                                                     "Penjual $nama terdekat · 1km",
                                                     style: const TextStyle(
                                                       color: Colors.black45,
-                                                      fontSize: 11,
+                                                      fontSize: 10,
                                                     ),
                                                   ),
                                                 ],
@@ -900,7 +900,7 @@ class _DetailScreenState extends State<DetailScreen> {
                                   "Lokasi",
                                   style: TextStyle(
                                     fontWeight: FontWeight.bold,
-                                    fontSize: 18,
+                                    fontSize: 14,
                                   ),
                                 ),
                                 const SizedBox(height: 12),
@@ -1014,7 +1014,7 @@ class _DetailScreenState extends State<DetailScreen> {
                                     "Deskripsi",
                                     style: TextStyle(
                                       fontWeight: FontWeight.bold,
-                                      fontSize: 18,
+                                      fontSize: 14,
                                     ),
                                   ),
                                   const SizedBox(height: 12),
@@ -1041,7 +1041,7 @@ class _DetailScreenState extends State<DetailScreen> {
                                   "Diposting",
                                   style: TextStyle(
                                     fontWeight: FontWeight.bold,
-                                    fontSize: 18,
+                                    fontSize: 14,
                                   ),
                                 ),
                                 const SizedBox(height: 12),
