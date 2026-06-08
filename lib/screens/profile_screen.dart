@@ -6,7 +6,7 @@ import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 import 'package:wongiwak/screens/detail_screen.dart';
-import 'package:wongiwak/screens/sign_in_screen.dart';
+import 'package:wongiwak/screens/guestscreen.dart';
 import 'package:wongiwak/screens/error/login.dart';
 import 'package:wongiwak/screens/settings_screen.dart';
 
@@ -51,13 +51,16 @@ class _ProfileScreenState extends State<ProfileScreen>
       builder: (BuildContext context) {
         return AlertDialog(
           shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(16),
+            borderRadius: BorderRadius.circular(20),
           ),
           title: const Text(
             'Konfirmasi Logout',
-            style: TextStyle(fontWeight: FontWeight.bold),
+            style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
           ),
-          content: const Text('Apakah kamu yakin ingin keluar dari akun ini?'),
+          content: const Text(
+            'Apakah kamu yakin ingin keluar dari akun ini?',
+            style: TextStyle(fontSize: 13, color: Colors.black54),
+          ),
           actions: [
             TextButton(
               onPressed: () => Navigator.pop(context, false),
@@ -70,7 +73,7 @@ class _ProfileScreenState extends State<ProfileScreen>
               style: ElevatedButton.styleFrom(
                 backgroundColor: Colors.red.shade400,
                 shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(8),
+                  borderRadius: BorderRadius.circular(10),
                 ),
               ),
               onPressed: () => Navigator.pop(context, true),
@@ -89,7 +92,7 @@ class _ProfileScreenState extends State<ProfileScreen>
       if (!mounted) return;
       Navigator.pushAndRemoveUntil(
         context,
-        MaterialPageRoute(builder: (context) => const SignInScreen()),
+        MaterialPageRoute(builder: (context) => const GuestScreen()),
         (Route<dynamic> route) => false,
       );
     }
@@ -102,20 +105,29 @@ class _ProfileScreenState extends State<ProfileScreen>
     }
 
     return Scaffold(
-      backgroundColor: Colors.grey.shade50,
+      backgroundColor: const Color(0xFFF5F7FA),
       appBar: AppBar(
         backgroundColor: Colors.white,
-        elevation: 0.5,
+        elevation: 0,
+        shadowColor: Colors.transparent,
+        surfaceTintColor: Colors.transparent,
         leading: GestureDetector(
           onTap: () => Navigator.pop(context),
-          child: const Icon(Icons.arrow_back, color: Colors.black),
+          child: const Icon(
+            Icons.arrow_back_ios_new,
+            color: Colors.black87,
+            size: 20,
+          ),
         ),
         automaticallyImplyLeading: false,
         actions: [
-          IconButton(
-            icon: Icon(Icons.logout, color: Colors.red.shade400),
-            tooltip: 'Logout',
-            onPressed: _logout,
+          Padding(
+            padding: const EdgeInsets.only(right: 8),
+            child: IconButton(
+              icon: Icon(Icons.logout_rounded, color: Colors.red.shade400),
+              tooltip: 'Logout',
+              onPressed: _logout,
+            ),
           ),
         ],
       ),
@@ -152,153 +164,245 @@ class _ProfileScreenState extends State<ProfileScreen>
               return [
                 SliverToBoxAdapter(
                   child: Container(
-                    padding: const EdgeInsets.all(24),
                     color: Colors.white,
                     child: Column(
                       children: [
-                        Stack(
-                          children: [
-                            Container(
-                              decoration: BoxDecoration(
-                                shape: BoxShape.circle,
-                                border: Border.all(
-                                  color: const Color(0xFF5E7AC4),
-                                  width: 3,
+                        // Profile Header Section
+                        Padding(
+                          padding: const EdgeInsets.fromLTRB(24, 20, 24, 0),
+                          child: Column(
+                            children: [
+                              // Avatar
+                              Stack(
+                                children: [
+                                  Container(
+                                    padding: const EdgeInsets.all(3),
+                                    decoration: BoxDecoration(
+                                      shape: BoxShape.circle,
+                                      gradient: const LinearGradient(
+                                        colors: [
+                                          Color(0xFF5E7AC4),
+                                          Color(0xFF8FA8E0),
+                                        ],
+                                        begin: Alignment.topLeft,
+                                        end: Alignment.bottomRight,
+                                      ),
+                                    ),
+                                    child: Container(
+                                      padding: const EdgeInsets.all(2),
+                                      decoration: const BoxDecoration(
+                                        shape: BoxShape.circle,
+                                        color: Colors.white,
+                                      ),
+                                      child: CircleAvatar(
+                                        radius: 46,
+                                        backgroundColor: const Color(
+                                          0xFFF0F4FF,
+                                        ),
+                                        backgroundImage:
+                                            profileImageBytes != null
+                                            ? MemoryImage(profileImageBytes)
+                                            : null,
+                                        child: profileImageBytes == null
+                                            ? Icon(
+                                                Icons.person_rounded,
+                                                size: 48,
+                                                color: Colors.grey.shade400,
+                                              )
+                                            : null,
+                                      ),
+                                    ),
+                                  ),
+                                  Positioned(
+                                    bottom: 2,
+                                    right: 2,
+                                    child: GestureDetector(
+                                      onTap: () {
+                                        Navigator.push(
+                                          context,
+                                          MaterialPageRoute(
+                                            builder: (_) =>
+                                                const SettingsScreen(),
+                                          ),
+                                        );
+                                      },
+                                      child: Container(
+                                        padding: const EdgeInsets.all(6),
+                                        decoration: BoxDecoration(
+                                          shape: BoxShape.circle,
+                                          color: const Color(0xFF5E7AC4),
+                                          border: Border.all(
+                                            color: Colors.white,
+                                            width: 2,
+                                          ),
+                                        ),
+                                        child: const Icon(
+                                          Icons.camera_alt_rounded,
+                                          color: Colors.white,
+                                          size: 14,
+                                        ),
+                                      ),
+                                    ),
+                                  ),
+                                ],
+                              ),
+                              const SizedBox(height: 14),
+
+                              // Name & info
+                              Text(
+                                displayName,
+                                style: const TextStyle(
+                                  fontSize: 20,
+                                  fontWeight: FontWeight.w700,
+                                  color: Color(0xFF1A1A2E),
+                                  letterSpacing: -0.3,
                                 ),
                               ),
-                              child: CircleAvatar(
-                                radius: 50,
-                                backgroundColor: Colors.grey.shade200,
-                                backgroundImage: profileImageBytes != null
-                                    ? MemoryImage(profileImageBytes)
-                                    : null,
-                                child: profileImageBytes == null
-                                    ? Icon(
-                                        Icons.person,
-                                        size: 50,
-                                        color: Colors.grey.shade400,
-                                      )
-                                    : null,
+                              const SizedBox(height: 4),
+                              Container(
+                                padding: const EdgeInsets.symmetric(
+                                  horizontal: 10,
+                                  vertical: 3,
+                                ),
+                                decoration: BoxDecoration(
+                                  color: const Color(0xFFF0F4FF),
+                                  borderRadius: BorderRadius.circular(20),
+                                ),
+                                child: Text(
+                                  occupation,
+                                  style: const TextStyle(
+                                    fontSize: 11,
+                                    color: Color(0xFF5E7AC4),
+                                    fontWeight: FontWeight.w500,
+                                  ),
+                                ),
                               ),
-                            ),
-                            Positioned(
-                              bottom: 0,
-                              right: 0,
-                              child: GestureDetector(
-                                onTap: () {
-                                  Navigator.push(
-                                    context,
-                                    MaterialPageRoute(
-                                      builder: (_) => const SettingsScreen(),
-                                    ),
-                                  );
-                                },
-                                child: Container(
-                                  padding: const EdgeInsets.all(6),
-                                  decoration: const BoxDecoration(
-                                    shape: BoxShape.circle,
+                              const SizedBox(height: 8),
+                              Row(
+                                mainAxisAlignment: MainAxisAlignment.center,
+                                children: [
+                                  const Icon(
+                                    Icons.location_on_rounded,
+                                    size: 13,
                                     color: Color(0xFF5E7AC4),
                                   ),
-                                  child: const Icon(
-                                    Icons.camera_alt,
+                                  const SizedBox(width: 3),
+                                  Text(
+                                    location,
+                                    style: TextStyle(
+                                      color: Colors.grey.shade500,
+                                      fontSize: 12,
+                                      fontWeight: FontWeight.w400,
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            ],
+                          ),
+                        ),
+
+                        const SizedBox(height: 20),
+
+                        // Stats Row
+                        Container(
+                          margin: const EdgeInsets.symmetric(horizontal: 20),
+                          padding: const EdgeInsets.symmetric(vertical: 14),
+                          decoration: BoxDecoration(
+                            color: const Color(0xFFF8FAFF),
+                            borderRadius: BorderRadius.circular(16),
+                            border: Border.all(
+                              color: const Color(0xFFE8EEFF),
+                              width: 1,
+                            ),
+                          ),
+                          child: Row(
+                            mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+                            children: [
+                              _statItem(
+                                label: 'Followers',
+                                value: followerCount.toString(),
+                              ),
+                              Container(
+                                width: 1,
+                                height: 28,
+                                color: const Color(0xFFE8EEFF),
+                              ),
+                              _statItemStream(
+                                label: 'Postingan',
+                                stream: FirebaseFirestore.instance
+                                    .collection('ikan')
+                                    .where(
+                                      'userId',
+                                      isEqualTo: currentUser!.uid,
+                                    )
+                                    .snapshots(),
+                              ),
+                              Container(
+                                width: 1,
+                                height: 28,
+                                color: const Color(0xFFE8EEFF),
+                              ),
+                              _statItemStream(
+                                label: 'Following',
+                                stream: FirebaseFirestore.instance
+                                    .collection('users')
+                                    .doc(currentUser!.uid)
+                                    .collection('langganan')
+                                    .snapshots(),
+                              ),
+                            ],
+                          ),
+                        ),
+
+                        const SizedBox(height: 16),
+
+                        // Edit Profile Button
+                        Padding(
+                          padding: const EdgeInsets.symmetric(horizontal: 20),
+                          child: SizedBox(
+                            width: double.infinity,
+                            child: ElevatedButton(
+                              onPressed: () {
+                                Navigator.push(
+                                  context,
+                                  MaterialPageRoute(
+                                    builder: (_) => const SettingsScreen(),
+                                  ),
+                                );
+                              },
+                              style: ElevatedButton.styleFrom(
+                                backgroundColor: const Color(0xFF5E7AC4),
+                                elevation: 0,
+                                padding: const EdgeInsets.symmetric(
+                                  vertical: 13,
+                                ),
+                                shape: RoundedRectangleBorder(
+                                  borderRadius: BorderRadius.circular(12),
+                                ),
+                              ),
+                              child: const Row(
+                                mainAxisAlignment: MainAxisAlignment.center,
+                                children: [
+                                  Icon(
+                                    Icons.edit_rounded,
                                     color: Colors.white,
                                     size: 16,
                                   ),
-                                ),
+                                  SizedBox(width: 8),
+                                  Text(
+                                    'Pengaturan Profil',
+                                    style: TextStyle(
+                                      color: Colors.white,
+                                      fontWeight: FontWeight.w600,
+                                      fontSize: 14,
+                                    ),
+                                  ),
+                                ],
                               ),
                             ),
-                          ],
-                        ),
-                        const SizedBox(height: 12),
-                        Text(
-                          displayName,
-                          style: const TextStyle(
-                            fontSize: 20,
-                            fontWeight: FontWeight.bold,
                           ),
-                        ),
-                        const SizedBox(height: 4),
-                        Text(
-                          occupation,
-                          style: TextStyle(
-                            fontSize: 13,
-                            color: Colors.grey.shade600,
-                          ),
-                        ),
-                        const SizedBox(height: 8),
-                        Row(
-                          mainAxisAlignment: MainAxisAlignment.center,
-                          children: [
-                            const Icon(
-                              Icons.location_on,
-                              size: 14,
-                              color: Colors.grey,
-                            ),
-                            const SizedBox(width: 4),
-                            Text(
-                              location,
-                              style: TextStyle(
-                                color: Colors.grey.shade600,
-                                fontSize: 12,
-                              ),
-                            ),
-                          ],
                         ),
                         const SizedBox(height: 16),
-                        Row(
-                          mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-                          children: [
-                            _statItem(
-                              label: 'Followers',
-                              value: followerCount.toString(),
-                            ),
-                            _dividerStat(),
-                            _statItemStream(
-                              label: 'Postingan',
-                              stream: FirebaseFirestore.instance
-                                  .collection('ikan')
-                                  .where('userId', isEqualTo: currentUser!.uid)
-                                  .snapshots(),
-                            ),
-                            _dividerStat(),
-                            _statItemStream(
-                              label: 'Following',
-                              stream: FirebaseFirestore.instance
-                                  .collection('users')
-                                  .doc(currentUser!.uid)
-                                  .collection('langganan')
-                                  .snapshots(),
-                            ),
-                          ],
-                        ),
-                        const SizedBox(height: 16),
-                        SizedBox(
-                          width: double.infinity,
-                          child: ElevatedButton(
-                            onPressed: () {
-                              Navigator.push(
-                                context,
-                                MaterialPageRoute(
-                                  builder: (_) => const SettingsScreen(),
-                                ),
-                              );
-                            },
-                            style: ElevatedButton.styleFrom(
-                              backgroundColor: const Color(0xFF5E7AC4),
-                              padding: const EdgeInsets.symmetric(vertical: 12),
-                              shape: RoundedRectangleBorder(
-                                borderRadius: BorderRadius.circular(10),
-                              ),
-                            ),
-                            child: const Text(
-                              'Pengaturan Profil',
-                              style: TextStyle(
-                                color: Colors.white,
-                                fontWeight: FontWeight.bold,
-                              ),
-                            ),
-                          ),
-                        ),
                       ],
                     ),
                   ),
@@ -309,17 +413,28 @@ class _ProfileScreenState extends State<ProfileScreen>
                     TabBar(
                       controller: _tabController,
                       labelColor: const Color(0xFF5E7AC4),
-                      unselectedLabelColor: Colors.grey,
+                      unselectedLabelColor: Colors.grey.shade400,
                       indicatorColor: const Color(0xFF5E7AC4),
-                      indicatorWeight: 2.5,
+                      indicatorWeight: 2,
+                      indicatorSize: TabBarIndicatorSize.label,
+                      labelStyle: const TextStyle(
+                        fontWeight: FontWeight.w600,
+                        fontSize: 13,
+                      ),
+                      unselectedLabelStyle: const TextStyle(
+                        fontWeight: FontWeight.w400,
+                        fontSize: 13,
+                      ),
                       tabs: const [
                         Tab(
-                          icon: Icon(Icons.grid_on, size: 20),
+                          icon: Icon(Icons.grid_on_rounded, size: 18),
                           text: 'Postingan',
+                          iconMargin: EdgeInsets.only(bottom: 2),
                         ),
                         Tab(
-                          icon: Icon(Icons.favorite, size: 20),
+                          icon: Icon(Icons.favorite_rounded, size: 18),
                           text: 'Favorite',
+                          iconMargin: EdgeInsets.only(bottom: 2),
                         ),
                       ],
                     ),
@@ -347,14 +462,19 @@ class _ProfileScreenState extends State<ProfileScreen>
           value,
           style: const TextStyle(
             fontSize: 18,
-            fontWeight: FontWeight.bold,
+            fontWeight: FontWeight.w700,
             color: Color(0xFF5E7AC4),
+            letterSpacing: -0.5,
           ),
         ),
-        const SizedBox(height: 4),
+        const SizedBox(height: 2),
         Text(
           label,
-          style: TextStyle(fontSize: 12, color: Colors.grey.shade600),
+          style: TextStyle(
+            fontSize: 11,
+            color: Colors.grey.shade500,
+            fontWeight: FontWeight.w400,
+          ),
         ),
       ],
     );
@@ -372,10 +492,6 @@ class _ProfileScreenState extends State<ProfileScreen>
       },
     );
   }
-
-  Widget _dividerStat() {
-    return Container(width: 1, height: 30, color: Colors.grey.shade200);
-  }
 }
 
 class _TabBarDelegate extends SliverPersistentHeaderDelegate {
@@ -389,14 +505,23 @@ class _TabBarDelegate extends SliverPersistentHeaderDelegate {
     double shrinkOffset,
     bool overlapsContent,
   ) {
-    return Container(color: Colors.white, child: tabBar);
+    return Container(
+      color: Colors.white,
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Divider(height: 1, color: Colors.grey.shade200),
+          tabBar,
+        ],
+      ),
+    );
   }
 
   @override
-  double get maxExtent => tabBar.preferredSize.height;
+  double get maxExtent => tabBar.preferredSize.height + 1;
 
   @override
-  double get minExtent => tabBar.preferredSize.height;
+  double get minExtent => tabBar.preferredSize.height + 1;
 
   @override
   bool shouldRebuild(covariant SliverPersistentHeaderDelegate oldDelegate) =>
@@ -448,15 +573,31 @@ class _PostinganTab extends StatelessWidget {
             child: Column(
               mainAxisAlignment: MainAxisAlignment.center,
               children: [
-                Icon(
-                  Icons.image_not_supported,
-                  size: 48,
-                  color: Colors.grey.shade300,
+                Container(
+                  padding: const EdgeInsets.all(20),
+                  decoration: BoxDecoration(
+                    color: const Color(0xFFF0F4FF),
+                    shape: BoxShape.circle,
+                  ),
+                  child: Icon(
+                    Icons.image_not_supported_rounded,
+                    size: 36,
+                    color: const Color(0xFF5E7AC4).withOpacity(0.5),
+                  ),
                 ),
-                const SizedBox(height: 12),
-                Text(
+                const SizedBox(height: 14),
+                const Text(
                   'Belum ada postingan',
-                  style: TextStyle(color: Colors.grey.shade600, fontSize: 14),
+                  style: TextStyle(
+                    color: Color(0xFF1A1A2E),
+                    fontSize: 14,
+                    fontWeight: FontWeight.w600,
+                  ),
+                ),
+                const SizedBox(height: 4),
+                Text(
+                  'Mulai jual ikanmu sekarang!',
+                  style: TextStyle(color: Colors.grey.shade400, fontSize: 12),
                 ),
               ],
             ),
@@ -470,7 +611,7 @@ class _PostinganTab extends StatelessWidget {
             crossAxisCount: 2,
             crossAxisSpacing: 10,
             mainAxisSpacing: 10,
-            childAspectRatio: 0.75,
+            childAspectRatio: 0.88, // ✅ Lebih compact, tidak terlalu panjang
           ),
           itemBuilder: (context, index) {
             final postData = posts[index].data() as Map<String, dynamic>;
@@ -489,73 +630,97 @@ class _PostinganTab extends StatelessWidget {
                   ),
                 );
               },
-              child: Card(
-                elevation: 1,
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(12),
+              child: Container(
+                decoration: BoxDecoration(
+                  color: Colors.white,
+                  borderRadius: BorderRadius.circular(14),
+                  boxShadow: [
+                    BoxShadow(
+                      color: Colors.black.withOpacity(0.06),
+                      blurRadius: 10,
+                      offset: const Offset(0, 3),
+                    ),
+                  ],
                 ),
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    ClipRRect(
-                      borderRadius: const BorderRadius.vertical(
-                        top: Radius.circular(12),
-                      ),
-                      child: SizedBox(
-                        height: 110,
-                        width: double.infinity,
-                        child: imageUrl.isNotEmpty
-                            ? Image.memory(
-                                base64Decode(imageUrl),
-                                fit: BoxFit.cover,
-                                errorBuilder: (_, __, ___) => Icon(
-                                  Icons.image_not_supported,
-                                  color: Colors.grey.shade400,
-                                ),
-                              )
-                            : Container(
-                                color: Colors.grey.shade200,
-                                child: Icon(
-                                  Icons.image_not_supported,
-                                  color: Colors.grey.shade400,
-                                ),
-                              ),
+                    // Image — mengambil ~65% tinggi card
+                    Expanded(
+                      flex: 50,
+                      child: ClipRRect(
+                        borderRadius: const BorderRadius.vertical(
+                          top: Radius.circular(14),
+                        ),
+                        child: SizedBox(
+                          width: double.infinity,
+                          child: imageUrl.isNotEmpty
+                              ? Image.memory(
+                                  base64Decode(imageUrl),
+                                  fit: BoxFit.cover,
+                                  errorBuilder: (_, __, ___) =>
+                                      _imagePlaceholder(),
+                                )
+                              : _imagePlaceholder(),
+                        ),
                       ),
                     ),
-                    Padding(
-                      padding: const EdgeInsets.all(8),
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Text(
-                            name,
-                            maxLines: 1,
-                            overflow: TextOverflow.ellipsis,
-                            style: const TextStyle(
-                              fontWeight: FontWeight.bold,
-                              fontSize: 12,
+                    // Info — mengambil ~35% tinggi card
+                    Expanded(
+                      flex: 35,
+                      child: Padding(
+                        padding: const EdgeInsets.fromLTRB(10, 8, 10, 8),
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+                          children: [
+                            Text(
+                              name,
+                              maxLines: 1,
+                              overflow: TextOverflow.ellipsis,
+                              style: const TextStyle(
+                                fontWeight: FontWeight.w700,
+                                fontSize: 12,
+                                color: Color(0xFF1A1A2E),
+                              ),
                             ),
-                          ),
-                          const SizedBox(height: 3),
-                          Text(
-                            category,
-                            style: TextStyle(
-                              color: Colors.grey.shade600,
-                              fontSize: 11,
+                            Row(
+                              children: [
+                                Container(
+                                  width: 6,
+                                  height: 6,
+                                  decoration: const BoxDecoration(
+                                    shape: BoxShape.circle,
+                                    color: Color(0xFF5E7AC4),
+                                  ),
+                                ),
+                                const SizedBox(width: 4),
+                                Expanded(
+                                  child: Text(
+                                    category,
+                                    maxLines: 1,
+                                    overflow: TextOverflow.ellipsis,
+                                    style: TextStyle(
+                                      color: Colors.grey.shade500,
+                                      fontSize: 10,
+                                      fontWeight: FontWeight.w400,
+                                    ),
+                                  ),
+                                ),
+                              ],
                             ),
-                          ),
-                          const SizedBox(height: 4),
-                          Text(
-                            formatRupiah(price),
-                            maxLines: 1,
-                            overflow: TextOverflow.ellipsis,
-                            style: const TextStyle(
-                              color: Color(0xFF5E7AC4),
-                              fontSize: 12,
-                              fontWeight: FontWeight.bold,
+                            Text(
+                              formatRupiah(price),
+                              maxLines: 1,
+                              overflow: TextOverflow.ellipsis,
+                              style: const TextStyle(
+                                color: Color(0xFF5E7AC4),
+                                fontSize: 12,
+                                fontWeight: FontWeight.w700,
+                              ),
                             ),
-                          ),
-                        ],
+                          ],
+                        ),
                       ),
                     ),
                   ],
@@ -565,6 +730,19 @@ class _PostinganTab extends StatelessWidget {
           },
         );
       },
+    );
+  }
+
+  Widget _imagePlaceholder() {
+    return Container(
+      color: const Color(0xFFF0F4FF),
+      child: const Center(
+        child: Icon(
+          Icons.image_not_supported_rounded,
+          color: Color(0xFFB8C8E8),
+          size: 28,
+        ),
+      ),
     );
   }
 }
@@ -588,13 +766,14 @@ class _FavoriteTab extends StatelessWidget {
     final konfirmasi = await showDialog<bool>(
       context: context,
       builder: (ctx) => AlertDialog(
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
         title: const Text(
           'Hapus Favorite?',
-          style: TextStyle(fontWeight: FontWeight.bold),
+          style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
         ),
         content: const Text(
           'Apakah kamu yakin ingin menghapus ikan ini dari favorite?',
+          style: TextStyle(fontSize: 13, color: Colors.black54),
         ),
         actions: [
           TextButton(
@@ -605,7 +784,7 @@ class _FavoriteTab extends StatelessWidget {
             style: ElevatedButton.styleFrom(
               backgroundColor: Colors.red,
               shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(8),
+                borderRadius: BorderRadius.circular(10),
               ),
             ),
             onPressed: () => Navigator.pop(ctx, true),
@@ -646,15 +825,26 @@ class _FavoriteTab extends StatelessWidget {
             child: Column(
               mainAxisAlignment: MainAxisAlignment.center,
               children: [
-                Icon(
-                  Icons.favorite_border,
-                  size: 48,
-                  color: Colors.grey.shade300,
+                Container(
+                  padding: const EdgeInsets.all(20),
+                  decoration: const BoxDecoration(
+                    color: Color(0xFFFFF0F0),
+                    shape: BoxShape.circle,
+                  ),
+                  child: Icon(
+                    Icons.favorite_border_rounded,
+                    size: 36,
+                    color: Colors.red.shade300,
+                  ),
                 ),
-                const SizedBox(height: 12),
-                Text(
+                const SizedBox(height: 14),
+                const Text(
                   'Belum ada favorite',
-                  style: TextStyle(color: Colors.grey.shade600, fontSize: 14),
+                  style: TextStyle(
+                    color: Color(0xFF1A1A2E),
+                    fontSize: 14,
+                    fontWeight: FontWeight.w600,
+                  ),
                 ),
                 const SizedBox(height: 4),
                 Text(
@@ -674,7 +864,7 @@ class _FavoriteTab extends StatelessWidget {
             crossAxisCount: 2,
             crossAxisSpacing: 10,
             mainAxisSpacing: 10,
-            childAspectRatio: 0.75,
+            childAspectRatio: 0.88, // ✅ Lebih compact, tidak terlalu panjang
           ),
           itemBuilder: (context, index) {
             final item = favorites[index].data() as Map<String, dynamic>;
@@ -693,99 +883,129 @@ class _FavoriteTab extends StatelessWidget {
                   ),
                 );
               },
-              child: Card(
-                elevation: 1,
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(12),
+              child: Container(
+                decoration: BoxDecoration(
+                  color: Colors.white,
+                  borderRadius: BorderRadius.circular(14),
+                  boxShadow: [
+                    BoxShadow(
+                      color: Colors.black.withOpacity(0.06),
+                      blurRadius: 10,
+                      offset: const Offset(0, 3),
+                    ),
+                  ],
                 ),
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Stack(
-                      children: [
-                        ClipRRect(
-                          borderRadius: const BorderRadius.vertical(
-                            top: Radius.circular(12),
-                          ),
-                          child: SizedBox(
-                            height: 110,
-                            width: double.infinity,
-                            child: gambar.toString().isNotEmpty
-                                ? Image.memory(
-                                    base64Decode(gambar),
-                                    fit: BoxFit.cover,
-                                    errorBuilder: (_, __, ___) => Container(
-                                      color: Colors.grey.shade200,
-                                      child: Icon(
-                                        Icons.image_not_supported,
-                                        color: Colors.grey.shade400,
-                                      ),
-                                    ),
-                                  )
-                                : Container(
-                                    color: Colors.grey.shade200,
-                                    child: Icon(
-                                      Icons.image_not_supported,
-                                      color: Colors.grey.shade400,
-                                    ),
-                                  ),
-                          ),
-                        ),
-                        Positioned(
-                          top: 6,
-                          right: 6,
-                          child: GestureDetector(
-                            onTap: () => _konfirmasiHapus(context, ikanId),
-                            child: Container(
-                              padding: const EdgeInsets.all(4),
-                              decoration: BoxDecoration(
-                                color: Colors.white.withOpacity(0.9),
-                                shape: BoxShape.circle,
-                              ),
-                              child: const Icon(
-                                Icons.favorite,
-                                color: Colors.red,
-                                size: 14,
-                              ),
-                            ),
-                          ),
-                        ),
-                      ],
-                    ),
-                    Padding(
-                      padding: const EdgeInsets.all(8),
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
+                    // Image — 65% tinggi
+                    Expanded(
+                      flex: 65,
+                      child: Stack(
                         children: [
-                          Text(
-                            nama,
-                            maxLines: 1,
-                            overflow: TextOverflow.ellipsis,
-                            style: const TextStyle(
-                              fontWeight: FontWeight.bold,
-                              fontSize: 12,
+                          ClipRRect(
+                            borderRadius: const BorderRadius.vertical(
+                              top: Radius.circular(14),
+                            ),
+                            child: SizedBox(
+                              width: double.infinity,
+                              height: double.infinity,
+                              child: gambar.toString().isNotEmpty
+                                  ? Image.memory(
+                                      base64Decode(gambar),
+                                      fit: BoxFit.cover,
+                                      errorBuilder: (_, __, ___) =>
+                                          _imagePlaceholder(),
+                                    )
+                                  : _imagePlaceholder(),
                             ),
                           ),
-                          const SizedBox(height: 3),
-                          Text(
-                            kategori,
-                            style: TextStyle(
-                              color: Colors.grey.shade600,
-                              fontSize: 11,
-                            ),
-                          ),
-                          const SizedBox(height: 4),
-                          Text(
-                            formatRupiah(harga),
-                            maxLines: 1,
-                            overflow: TextOverflow.ellipsis,
-                            style: const TextStyle(
-                              color: Color(0xFF5E7AC4),
-                              fontSize: 12,
-                              fontWeight: FontWeight.bold,
+                          // Favorite button
+                          Positioned(
+                            top: 7,
+                            right: 7,
+                            child: GestureDetector(
+                              onTap: () => _konfirmasiHapus(context, ikanId),
+                              child: Container(
+                                padding: const EdgeInsets.all(5),
+                                decoration: BoxDecoration(
+                                  color: Colors.white,
+                                  shape: BoxShape.circle,
+                                  boxShadow: [
+                                    BoxShadow(
+                                      color: Colors.black.withOpacity(0.12),
+                                      blurRadius: 6,
+                                      offset: const Offset(0, 2),
+                                    ),
+                                  ],
+                                ),
+                                child: const Icon(
+                                  Icons.favorite_rounded,
+                                  color: Colors.red,
+                                  size: 14,
+                                ),
+                              ),
                             ),
                           ),
                         ],
+                      ),
+                    ),
+                    // Info — 35% tinggi
+                    Expanded(
+                      flex: 35,
+                      child: Padding(
+                        padding: const EdgeInsets.fromLTRB(10, 8, 10, 8),
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+                          children: [
+                            Text(
+                              nama,
+                              maxLines: 1,
+                              overflow: TextOverflow.ellipsis,
+                              style: const TextStyle(
+                                fontWeight: FontWeight.w700,
+                                fontSize: 12,
+                                color: Color(0xFF1A1A2E),
+                              ),
+                            ),
+                            Row(
+                              children: [
+                                Container(
+                                  width: 6,
+                                  height: 6,
+                                  decoration: const BoxDecoration(
+                                    shape: BoxShape.circle,
+                                    color: Color(0xFF5E7AC4),
+                                  ),
+                                ),
+                                const SizedBox(width: 4),
+                                Expanded(
+                                  child: Text(
+                                    kategori,
+                                    maxLines: 1,
+                                    overflow: TextOverflow.ellipsis,
+                                    style: TextStyle(
+                                      color: Colors.grey.shade500,
+                                      fontSize: 10,
+                                      fontWeight: FontWeight.w400,
+                                    ),
+                                  ),
+                                ),
+                              ],
+                            ),
+                            Text(
+                              formatRupiah(harga),
+                              maxLines: 1,
+                              overflow: TextOverflow.ellipsis,
+                              style: const TextStyle(
+                                color: Color(0xFF5E7AC4),
+                                fontSize: 12,
+                                fontWeight: FontWeight.w700,
+                              ),
+                            ),
+                          ],
+                        ),
                       ),
                     ),
                   ],
@@ -795,6 +1015,19 @@ class _FavoriteTab extends StatelessWidget {
           },
         );
       },
+    );
+  }
+
+  Widget _imagePlaceholder() {
+    return Container(
+      color: const Color(0xFFF0F4FF),
+      child: const Center(
+        child: Icon(
+          Icons.image_not_supported_rounded,
+          color: Color(0xFFB8C8E8),
+          size: 28,
+        ),
+      ),
     );
   }
 }
