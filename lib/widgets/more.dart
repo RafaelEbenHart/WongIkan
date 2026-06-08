@@ -2,6 +2,7 @@ import 'dart:convert';
 
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
+import 'package:intl/intl.dart';
 
 class MoreSectionWidget extends StatefulWidget {
   final String title;
@@ -196,6 +197,16 @@ class _FishCard extends StatelessWidget {
     required this.detailBuilder,
   });
 
+  String _formatRupiah(dynamic harga) {
+    final number = int.tryParse(harga.toString()) ?? 0;
+    final format = NumberFormat.currency(
+      locale: 'id_ID',
+      symbol: 'Rp ',
+      decimalDigits: 0,
+    );
+    return format.format(number);
+  }
+
   Widget _placeholder() => Container(
     color: const Color(0xFFEEF3FF),
     child: const Center(
@@ -292,7 +303,7 @@ class _FishCard extends StatelessWidget {
                   ),
                   const SizedBox(height: 6),
                   Text(
-                    'Rp $harga',
+                    _formatRupiah(harga),
                     style: const TextStyle(
                       color: Color(0xFF6C8EF5),
                       fontWeight: FontWeight.w800,
