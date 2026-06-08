@@ -107,10 +107,8 @@ class _ProfileScreenState extends State<ProfileScreen>
     return Scaffold(
       backgroundColor: const Color(0xFFF5F7FA),
       appBar: AppBar(
-        backgroundColor: Colors.white,
+        backgroundColor: Colors.grey.shade50,
         elevation: 0,
-        shadowColor: Colors.transparent,
-        surfaceTintColor: Colors.transparent,
         leading: GestureDetector(
           onTap: () => Navigator.pop(context),
           child: const Icon(
@@ -167,193 +165,96 @@ class _ProfileScreenState extends State<ProfileScreen>
                     color: Colors.white,
                     child: Column(
                       children: [
-                        // Profile Header Section
-                        Padding(
-                          padding: const EdgeInsets.fromLTRB(24, 20, 24, 0),
-                          child: Column(
-                            children: [
-                              // Avatar
-                              Stack(
-                                children: [
-                                  Container(
-                                    padding: const EdgeInsets.all(3),
-                                    decoration: BoxDecoration(
-                                      shape: BoxShape.circle,
-                                      gradient: const LinearGradient(
-                                        colors: [
-                                          Color(0xFF5E7AC4),
-                                          Color(0xFF8FA8E0),
-                                        ],
-                                        begin: Alignment.topLeft,
-                                        end: Alignment.bottomRight,
-                                      ),
-                                    ),
-                                    child: Container(
-                                      padding: const EdgeInsets.all(2),
-                                      decoration: const BoxDecoration(
-                                        shape: BoxShape.circle,
-                                        color: Colors.white,
-                                      ),
-                                      child: CircleAvatar(
-                                        radius: 46,
-                                        backgroundColor: const Color(
-                                          0xFFF0F4FF,
-                                        ),
-                                        backgroundImage:
-                                            profileImageBytes != null
-                                            ? MemoryImage(profileImageBytes)
-                                            : null,
-                                        child: profileImageBytes == null
-                                            ? Icon(
-                                                Icons.person_rounded,
-                                                size: 48,
-                                                color: Colors.grey.shade400,
-                                              )
-                                            : null,
-                                      ),
-                                    ),
-                                  ),
-                                  Positioned(
-                                    bottom: 2,
-                                    right: 2,
-                                    child: GestureDetector(
-                                      onTap: () {
-                                        Navigator.push(
-                                          context,
-                                          MaterialPageRoute(
-                                            builder: (_) =>
-                                                const SettingsScreen(),
-                                          ),
-                                        );
-                                      },
-                                      child: Container(
-                                        padding: const EdgeInsets.all(6),
-                                        decoration: BoxDecoration(
-                                          shape: BoxShape.circle,
-                                          color: const Color(0xFF5E7AC4),
-                                          border: Border.all(
-                                            color: Colors.white,
-                                            width: 2,
-                                          ),
-                                        ),
-                                        child: const Icon(
-                                          Icons.camera_alt_rounded,
-                                          color: Colors.white,
-                                          size: 14,
-                                        ),
-                                      ),
-                                    ),
-                                  ),
-                                ],
-                              ),
-                              const SizedBox(height: 14),
-
-                              // Name & info
-                              Text(
-                                displayName,
-                                style: const TextStyle(
-                                  fontSize: 20,
-                                  fontWeight: FontWeight.w700,
-                                  color: Color(0xFF1A1A2E),
-                                  letterSpacing: -0.3,
-                                ),
-                              ),
-                              const SizedBox(height: 4),
-                              Container(
-                                padding: const EdgeInsets.symmetric(
-                                  horizontal: 10,
-                                  vertical: 3,
-                                ),
-                                decoration: BoxDecoration(
-                                  color: const Color(0xFFF0F4FF),
-                                  borderRadius: BorderRadius.circular(20),
-                                ),
-                                child: Text(
-                                  occupation,
-                                  style: const TextStyle(
-                                    fontSize: 11,
-                                    color: Color(0xFF5E7AC4),
-                                    fontWeight: FontWeight.w500,
+                        GestureDetector(
+                          onTap: () {
+                            if (profileImageBytes != null) {
+                              Navigator.push(
+                                context,
+                                MaterialPageRoute(
+                                  builder: (_) => FullImageScreenBytes(
+                                    imageBytes: profileImageBytes!,
                                   ),
                                 ),
-                              ),
-                              const SizedBox(height: 8),
-                              Row(
-                                mainAxisAlignment: MainAxisAlignment.center,
-                                children: [
-                                  const Icon(
-                                    Icons.location_on_rounded,
-                                    size: 13,
-                                    color: Color(0xFF5E7AC4),
-                                  ),
-                                  const SizedBox(width: 3),
-                                  Text(
-                                    location,
-                                    style: TextStyle(
-                                      color: Colors.grey.shade500,
-                                      fontSize: 12,
-                                      fontWeight: FontWeight.w400,
-                                    ),
-                                  ),
-                                ],
-                              ),
-                            ],
+                              );
+                            }
+                          },
+                          child: CircleAvatar(
+                            radius: 50,
+                            backgroundColor: Colors.grey.shade200,
+                            backgroundImage: profileImageBytes != null
+                                ? MemoryImage(profileImageBytes)
+                                : null,
+                            child: profileImageBytes == null
+                                ? Icon(
+                                    Icons.person,
+                                    size: 50,
+                                    color: Colors.grey.shade400,
+                                  )
+                                : null,
                           ),
                         ),
-
-                        const SizedBox(height: 20),
-
-                        // Stats Row
-                        Container(
-                          margin: const EdgeInsets.symmetric(horizontal: 20),
-                          padding: const EdgeInsets.symmetric(vertical: 14),
-                          decoration: BoxDecoration(
-                            color: const Color(0xFFF8FAFF),
-                            borderRadius: BorderRadius.circular(16),
-                            border: Border.all(
-                              color: const Color(0xFFE8EEFF),
-                              width: 1,
+                        const SizedBox(height: 12),
+                        Text(
+                          displayName,
+                          style: const TextStyle(
+                            fontSize: 20,
+                            fontWeight: FontWeight.bold,
+                          ),
+                        ),
+                        const SizedBox(height: 4),
+                        Text(
+                          occupation,
+                          style: TextStyle(
+                            fontSize: 13,
+                            color: Colors.grey.shade600,
+                          ),
+                        ),
+                        const SizedBox(height: 8),
+                        Row(
+                          mainAxisAlignment: MainAxisAlignment.center,
+                          children: [
+                            const Icon(
+                              Icons.location_on,
+                              size: 14,
+                              color: Colors.grey,
                             ),
-                          ),
-                          child: Row(
-                            mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-                            children: [
-                              _statItem(
-                                label: 'Followers',
-                                value: followerCount.toString(),
+                            const SizedBox(width: 4),
+                            Text(
+                              location,
+                              style: TextStyle(
+                                color: Colors.grey.shade600,
+                                fontSize: 12,
                               ),
-                              Container(
-                                width: 1,
-                                height: 28,
-                                color: const Color(0xFFE8EEFF),
-                              ),
-                              _statItemStream(
-                                label: 'Postingan',
-                                stream: FirebaseFirestore.instance
-                                    .collection('ikan')
-                                    .where(
-                                      'userId',
-                                      isEqualTo: currentUser!.uid,
-                                    )
-                                    .snapshots(),
-                              ),
-                              Container(
-                                width: 1,
-                                height: 28,
-                                color: const Color(0xFFE8EEFF),
-                              ),
-                              _statItemStream(
-                                label: 'Following',
-                                stream: FirebaseFirestore.instance
-                                    .collection('users')
-                                    .doc(currentUser!.uid)
-                                    .collection('langganan')
-                                    .snapshots(),
-                              ),
-                            ],
-                          ),
+                            ),
+                          ],
                         ),
-
+                        const SizedBox(height: 16),
+                        Row(
+                          mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+                          children: [
+                            _statItem(
+                              label: 'Followers',
+                              value: followerCount.toString(),
+                            ),
+                            _dividerStat(),
+                            _statItemStream(
+                              label: 'Postingan',
+                              stream: FirebaseFirestore.instance
+                                  .collection('ikan')
+                                  .where('userId', isEqualTo: currentUser!.uid)
+                                  .snapshots(),
+                            ),
+                            _dividerStat(),
+                            _statItemStream(
+                              label: 'Following',
+                              stream: FirebaseFirestore.instance
+                                  .collection('users')
+                                  .doc(currentUser!.uid)
+                                  .collection('langganan')
+                                  .snapshots(),
+                            ),
+                          ],
+                        ),
                         const SizedBox(height: 16),
 
                         // Edit Profile Button
@@ -874,147 +775,163 @@ class _FavoriteTab extends StatelessWidget {
             final kategori = item['kategori'] ?? '';
             final gambar = item['gambar'] ?? '';
 
-            return GestureDetector(
-              onTap: () {
-                Navigator.push(
-                  context,
-                  MaterialPageRoute(
-                    builder: (_) => DetailScreen(ikanId: ikanId),
-                  ),
-                );
-              },
-              child: Container(
-                decoration: BoxDecoration(
-                  color: Colors.white,
-                  borderRadius: BorderRadius.circular(14),
-                  boxShadow: [
-                    BoxShadow(
-                      color: Colors.black.withOpacity(0.06),
-                      blurRadius: 10,
-                      offset: const Offset(0, 3),
-                    ),
-                  ],
-                ),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    // Image — 65% tinggi
-                    Expanded(
-                      flex: 65,
-                      child: Stack(
-                        children: [
-                          ClipRRect(
-                            borderRadius: const BorderRadius.vertical(
-                              top: Radius.circular(14),
-                            ),
-                            child: SizedBox(
-                              width: double.infinity,
-                              height: double.infinity,
-                              child: gambar.toString().isNotEmpty
-                                  ? Image.memory(
-                                      base64Decode(gambar),
-                                      fit: BoxFit.cover,
-                                      errorBuilder: (_, __, ___) =>
-                                          _imagePlaceholder(),
-                                    )
-                                  : _imagePlaceholder(),
-                            ),
-                          ),
-                          // Favorite button
-                          Positioned(
-                            top: 7,
-                            right: 7,
-                            child: GestureDetector(
-                              onTap: () => _konfirmasiHapus(context, ikanId),
-                              child: Container(
-                                padding: const EdgeInsets.all(5),
-                                decoration: BoxDecoration(
-                                  color: Colors.white,
-                                  shape: BoxShape.circle,
-                                  boxShadow: [
-                                    BoxShadow(
-                                      color: Colors.black.withOpacity(0.12),
-                                      blurRadius: 6,
-                                      offset: const Offset(0, 2),
-                                    ),
-                                  ],
-                                ),
-                                child: const Icon(
-                                  Icons.favorite_rounded,
-                                  color: Colors.red,
-                                  size: 14,
-                                ),
-                              ),
-                            ),
-                          ),
-                        ],
+            // Validasi apakah post masih ada di database
+            return FutureBuilder<DocumentSnapshot>(
+              future: FirebaseFirestore.instance
+                  .collection('ikan')
+                  .doc(ikanId)
+                  .get(),
+              builder: (context, postSnapshot) {
+                // Jika post tidak ada, auto-delete dari favorites
+                if (postSnapshot.hasData && !postSnapshot.data!.exists) {
+                  WidgetsBinding.instance.addPostFrameCallback((_) {
+                    FirebaseFirestore.instance
+                        .collection('users')
+                        .doc(uid)
+                        .collection('favorites')
+                        .doc(ikanId)
+                        .delete();
+                  });
+                  return const SizedBox.shrink();
+                }
+
+                // Post masih ada, tampilkan card
+                return GestureDetector(
+                  onTap: () {
+                    Navigator.push(
+                      context,
+                      MaterialPageRoute(
+                        builder: (_) => DetailScreen(ikanId: ikanId),
                       ),
+                    );
+                  },
+                  child: Card(
+                    elevation: 1,
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(12),
                     ),
-                    // Info — 35% tinggi
-                    Expanded(
-                      flex: 35,
-                      child: Padding(
-                        padding: const EdgeInsets.fromLTRB(10, 8, 10, 8),
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Stack(
                           children: [
-                            Text(
-                              nama,
-                              maxLines: 1,
-                              overflow: TextOverflow.ellipsis,
-                              style: const TextStyle(
-                                fontWeight: FontWeight.w700,
-                                fontSize: 12,
-                                color: Color(0xFF1A1A2E),
+                            ClipRRect(
+                              borderRadius: const BorderRadius.vertical(
+                                top: Radius.circular(12),
+                              ),
+                              child: SizedBox(
+                                height: 100,
+                                width: double.infinity,
+                                child: gambar.toString().isNotEmpty
+                                    ? Image.memory(
+                                        base64Decode(gambar),
+                                        fit: BoxFit.cover,
+                                        errorBuilder: (_, __, ___) => Container(
+                                          color: Colors.grey.shade200,
+                                          child: Icon(
+                                            Icons.image_not_supported,
+                                            color: Colors.grey.shade400,
+                                          ),
+                                        ),
+                                      )
+                                    : Container(
+                                        color: Colors.grey.shade200,
+                                        child: Icon(
+                                          Icons.image_not_supported,
+                                          color: Colors.grey.shade400,
+                                        ),
+                                      ),
                               ),
                             ),
-                            Row(
-                              children: [
-                                Container(
-                                  width: 6,
-                                  height: 6,
-                                  decoration: const BoxDecoration(
+                            Positioned(
+                              top: 6,
+                              right: 6,
+                              child: GestureDetector(
+                                onTap: () => _konfirmasiHapus(context, ikanId),
+                                child: Container(
+                                  padding: const EdgeInsets.all(4),
+                                  decoration: BoxDecoration(
+                                    color: Colors.white.withOpacity(0.9),
                                     shape: BoxShape.circle,
-                                    color: Color(0xFF5E7AC4),
+                                  ),
+                                  child: const Icon(
+                                    Icons.favorite,
+                                    color: Colors.red,
+                                    size: 14,
                                   ),
                                 ),
-                                const SizedBox(width: 4),
-                                Expanded(
-                                  child: Text(
-                                    kategori,
-                                    maxLines: 1,
-                                    overflow: TextOverflow.ellipsis,
-                                    style: TextStyle(
-                                      color: Colors.grey.shade500,
-                                      fontSize: 10,
-                                      fontWeight: FontWeight.w400,
-                                    ),
-                                  ),
-                                ),
-                              ],
-                            ),
-                            Text(
-                              formatRupiah(harga),
-                              maxLines: 1,
-                              overflow: TextOverflow.ellipsis,
-                              style: const TextStyle(
-                                color: Color(0xFF5E7AC4),
-                                fontSize: 12,
-                                fontWeight: FontWeight.w700,
                               ),
                             ),
                           ],
                         ),
-                      ),
+                        Padding(
+                          padding: const EdgeInsets.all(8),
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Text(
+                                nama,
+                                maxLines: 1,
+                                overflow: TextOverflow.ellipsis,
+                                style: const TextStyle(
+                                  fontWeight: FontWeight.bold,
+                                  fontSize: 12,
+                                ),
+                              ),
+                              const SizedBox(height: 3),
+                              Text(
+                                kategori,
+                                style: TextStyle(
+                                  color: Colors.grey.shade600,
+                                  fontSize: 11,
+                                ),
+                              ),
+                              const SizedBox(height: 4),
+                              Text(
+                                formatRupiah(harga),
+                                maxLines: 1,
+                                overflow: TextOverflow.ellipsis,
+                                style: const TextStyle(
+                                  color: Color(0xFF5E7AC4),
+                                  fontSize: 12,
+                                  fontWeight: FontWeight.bold,
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                      ],
                     ),
-                  ],
-                ),
-              ),
+                  ),
+                );
+              },
             );
           },
         );
       },
+    );
+  }
+}
+
+class FullImageScreenBytes extends StatelessWidget {
+  final Uint8List imageBytes;
+
+  const FullImageScreenBytes({super.key, required this.imageBytes});
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      backgroundColor: Colors.black,
+      appBar: AppBar(
+        backgroundColor: Colors.black,
+        elevation: 0,
+        leading: GestureDetector(
+          onTap: () => Navigator.pop(context),
+          child: const Icon(Icons.arrow_back, color: Colors.white),
+        ),
+        automaticallyImplyLeading: false,
+      ),
+      body: Center(child: Image.memory(imageBytes, fit: BoxFit.contain)),
     );
   }
 

@@ -454,14 +454,18 @@ class _SettingsScreenState extends State<SettingsScreen> {
                             onTap: _pickImage,
                             child: Container(
                               padding: const EdgeInsets.all(8),
-                              decoration: const BoxDecoration(
+                              decoration: BoxDecoration(
                                 shape: BoxShape.circle,
-                                color: Color(0xFF5E7AC4),
+                                color: const Color(0xFF5E7AC4),
+                                border: Border.all(
+                                  color: Colors.white,
+                                  width: 2,
+                                ),
                               ),
                               child: const Icon(
                                 Icons.camera_alt,
-                                color: Colors.white,
                                 size: 20,
+                                color: Colors.white,
                               ),
                             ),
                           ),
