@@ -106,8 +106,6 @@ class _ProfileScreenState extends State<ProfileScreen>
       appBar: AppBar(
         backgroundColor: Colors.grey.shade50,
         elevation: 0,
-        backgroundColor: Colors.grey.shade50,
-        elevation: 0,
         leading: GestureDetector(
           onTap: () => Navigator.pop(context),
           child: const Icon(Icons.arrow_back, color: Colors.black),
@@ -160,35 +158,30 @@ class _ProfileScreenState extends State<ProfileScreen>
                       children: [
                         GestureDetector(
                           onTap: () {
-                            Navigator.push(
-                              context,
-                              MaterialPageRoute(
-                                builder: (_) => const SettingsScreen(),
-                              ),
-                            );
+                            if (profileImageBytes != null) {
+                              Navigator.push(
+                                context,
+                                MaterialPageRoute(
+                                  builder: (_) => FullImageScreenBytes(
+                                    imageBytes: profileImageBytes!,
+                                  ),
+                                ),
+                              );
+                            }
                           },
-                          child: Container(
-                            decoration: BoxDecoration(
-                              shape: BoxShape.circle,
-                              border: Border.all(
-                                color: const Color(0xFF5E7AC4),
-                                width: 3,
-                              ),
-                            ),
-                            child: CircleAvatar(
-                              radius: 50,
-                              backgroundColor: Colors.grey.shade200,
-                              backgroundImage: profileImageBytes != null
-                                  ? MemoryImage(profileImageBytes)
-                                  : null,
-                              child: profileImageBytes == null
-                                  ? Icon(
-                                      Icons.person,
-                                      size: 50,
-                                      color: Colors.grey.shade400,
-                                    )
-                                  : null,
-                            ),
+                          child: CircleAvatar(
+                            radius: 50,
+                            backgroundColor: Colors.grey.shade200,
+                            backgroundImage: profileImageBytes != null
+                                ? MemoryImage(profileImageBytes)
+                                : null,
+                            child: profileImageBytes == null
+                                ? Icon(
+                                    Icons.person,
+                                    size: 50,
+                                    color: Colors.grey.shade400,
+                                  )
+                                : null,
                           ),
                         ),
                         const SizedBox(height: 12),
@@ -800,6 +793,29 @@ class _FavoriteTab extends StatelessWidget {
           },
         );
       },
+    );
+  }
+}
+
+class FullImageScreenBytes extends StatelessWidget {
+  final Uint8List imageBytes;
+
+  const FullImageScreenBytes({super.key, required this.imageBytes});
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      backgroundColor: Colors.black,
+      appBar: AppBar(
+        backgroundColor: Colors.black,
+        elevation: 0,
+        leading: GestureDetector(
+          onTap: () => Navigator.pop(context),
+          child: const Icon(Icons.arrow_back, color: Colors.white),
+        ),
+        automaticallyImplyLeading: false,
+      ),
+      body: Center(child: Image.memory(imageBytes, fit: BoxFit.contain)),
     );
   }
 }

@@ -273,21 +273,41 @@ class _SettingsScreenState extends State<SettingsScreen> {
                               width: 3,
                             ),
                           ),
+                          child: CircleAvatar(
+                            radius: 60,
+                            backgroundColor: Colors.grey.shade200,
+                            backgroundImage: selectedImageBytes != null
+                                ? MemoryImage(selectedImageBytes!)
+                                : null,
+                            child: selectedImageBytes == null
+                                ? Icon(
+                                    Icons.person,
+                                    size: 60,
+                                    color: Colors.grey.shade400,
+                                  )
+                                : null,
+                          ),
+                        ),
+                        Positioned(
+                          bottom: 0,
+                          right: 0,
                           child: GestureDetector(
                             onTap: _pickImage,
-                            child: CircleAvatar(
-                              radius: 60,
-                              backgroundColor: Colors.grey.shade200,
-                              backgroundImage: selectedImageBytes != null
-                                  ? MemoryImage(selectedImageBytes!)
-                                  : null,
-                              child: selectedImageBytes == null
-                                  ? Icon(
-                                      Icons.person,
-                                      size: 60,
-                                      color: Colors.grey.shade400,
-                                    )
-                                  : null,
+                            child: Container(
+                              padding: const EdgeInsets.all(8),
+                              decoration: BoxDecoration(
+                                shape: BoxShape.circle,
+                                color: const Color(0xFF5E7AC4),
+                                border: Border.all(
+                                  color: Colors.white,
+                                  width: 2,
+                                ),
+                              ),
+                              child: const Icon(
+                                Icons.camera_alt,
+                                size: 20,
+                                color: Colors.white,
+                              ),
                             ),
                           ),
                         ),
