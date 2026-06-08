@@ -326,8 +326,11 @@ class _DetailScreenState extends State<DetailScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
     return Scaffold(
-      backgroundColor: const Color(0xffF5F5F5),
+      backgroundColor: isDark
+          ? const Color(0xFF121212)
+          : const Color(0xffF5F5F5),
       body: StreamBuilder<DocumentSnapshot>(
         stream: firestore.collection('ikan').doc(widget.ikanId).snapshots(),
         builder: (context, snapshot) {
@@ -399,20 +402,24 @@ class _DetailScreenState extends State<DetailScreen> {
                               width: 45,
                               height: 45,
                               decoration: BoxDecoration(
-                                color: Colors.white,
+                                color: isDark
+                                    ? const Color(0xFF1E1E1E)
+                                    : Colors.white,
                                 borderRadius: BorderRadius.circular(14),
                               ),
-                              child: const Icon(
+                              child: Icon(
                                 Icons.arrow_back_ios_new,
                                 size: 18,
+                                color: isDark ? Colors.white : Colors.black,
                               ),
                             ),
                           ),
-                          const Text(
+                          Text(
                             "Detail",
                             style: TextStyle(
                               fontSize: 16,
                               fontWeight: FontWeight.bold,
+                              color: isDark ? Colors.white : Colors.black,
                             ),
                           ),
                           // Tombol Share atau Delete (hanya untuk pemilik)
@@ -424,10 +431,12 @@ class _DetailScreenState extends State<DetailScreen> {
                                     width: 45,
                                     height: 45,
                                     decoration: BoxDecoration(
-                                      color: Colors.white,
+                                      color: isDark
+                                          ? const Color(0xFF1E1E1E)
+                                          : Colors.white,
                                       borderRadius: BorderRadius.circular(14),
                                     ),
-                                    child: const Icon(
+                                    child: Icon(
                                       Icons.delete_outline,
                                       color: Colors.red,
                                     ),
@@ -439,10 +448,17 @@ class _DetailScreenState extends State<DetailScreen> {
                                     width: 45,
                                     height: 45,
                                     decoration: BoxDecoration(
-                                      color: Colors.white,
+                                      color: isDark
+                                          ? const Color(0xFF1E1E1E)
+                                          : Colors.white,
                                       borderRadius: BorderRadius.circular(14),
                                     ),
-                                    child: const Icon(Icons.share),
+                                    child: Icon(
+                                      Icons.share,
+                                      color: isDark
+                                          ? Colors.white
+                                          : Colors.black,
+                                    ),
                                   ),
                                 ),
                         ],
@@ -461,7 +477,9 @@ class _DetailScreenState extends State<DetailScreen> {
                         height: 260,
                         margin: const EdgeInsets.symmetric(horizontal: 16),
                         decoration: BoxDecoration(
-                          color: Colors.blue.shade50,
+                          color: isDark
+                              ? const Color(0xFF2A2A3E)
+                              : Colors.blue.shade50,
                           borderRadius: BorderRadius.circular(24),
                         ),
                         clipBehavior: Clip.hardEdge,
@@ -513,8 +531,18 @@ class _DetailScreenState extends State<DetailScreen> {
                             decoration: BoxDecoration(
                               color: _isFavorite
                                   ? Colors.red.shade50
-                                  : Colors.white,
+                                  : (isDark
+                                        ? const Color(0xFF2A2A3E)
+                                        : Colors.red),
                               borderRadius: BorderRadius.circular(12),
+                              border: _isFavorite
+                                  ? null
+                                  : Border.all(
+                                      color: isDark
+                                          ? Colors.grey.shade600
+                                          : Colors.red.shade200,
+                                      width: 1.5,
+                                    ),
                             ),
                             child: _loadingFavorite
                                 ? const SizedBox(
@@ -535,7 +563,9 @@ class _DetailScreenState extends State<DetailScreen> {
                                         size: 20,
                                         color: _isFavorite
                                             ? Colors.red
-                                            : Colors.black87,
+                                            : (isDark
+                                                  ? Colors.grey.shade300
+                                                  : Colors.black87),
                                       ),
                                       const SizedBox(width: 6),
                                       Text(
@@ -543,7 +573,10 @@ class _DetailScreenState extends State<DetailScreen> {
                                         style: TextStyle(
                                           color: _isFavorite
                                               ? Colors.red
-                                              : Colors.black87,
+                                              : (isDark
+                                                    ? Colors.grey.shade300
+                                                    : Colors.black87),
+                                          fontWeight: FontWeight.w600,
                                         ),
                                       ),
                                     ],
@@ -560,19 +593,21 @@ class _DetailScreenState extends State<DetailScreen> {
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
-                          // ── NAMA & HARGA ──
                           Text(
                             nama,
-                            style: const TextStyle(
+                            style: TextStyle(
                               fontSize: 20,
                               fontWeight: FontWeight.bold,
+                              color: isDark ? Colors.white : Colors.black,
                             ),
                           ),
                           const SizedBox(height: 8),
                           Text(
                             kategori,
-                            style: const TextStyle(
-                              color: Color(0xFF6C8EF5),
+                            style: TextStyle(
+                              color: isDark
+                                  ? Color(0xFF6C8EF5)
+                                  : Colors.black54,
                               fontWeight: FontWeight.w600,
                               fontSize: 14,
                             ),
@@ -630,18 +665,23 @@ class _DetailScreenState extends State<DetailScreen> {
                                   width: double.infinity,
                                   padding: const EdgeInsets.all(16),
                                   decoration: BoxDecoration(
-                                    color: Colors.white,
+                                    color: isDark
+                                        ? const Color(0xFF1E1E1E)
+                                        : Colors.white,
                                     borderRadius: BorderRadius.circular(20),
                                   ),
                                   child: Column(
                                     crossAxisAlignment:
                                         CrossAxisAlignment.start,
                                     children: [
-                                      const Text(
+                                      Text(
                                         "Info Penjual",
                                         style: TextStyle(
                                           fontWeight: FontWeight.bold,
                                           fontSize: 14,
+                                          color: isDark
+                                              ? Colors.white
+                                              : Colors.black,
                                         ),
                                       ),
                                       const SizedBox(height: 14),
@@ -670,24 +710,31 @@ class _DetailScreenState extends State<DetailScreen> {
                                               children: [
                                                 Text(
                                                   displayUsername,
-                                                  style: const TextStyle(
+                                                  style: TextStyle(
                                                     fontWeight: FontWeight.bold,
                                                     fontSize: 14,
+                                                    color: isDark
+                                                        ? Colors.white
+                                                        : Colors.black,
                                                   ),
                                                 ),
                                                 const SizedBox(height: 4),
                                                 Text(
                                                   alamat,
-                                                  style: const TextStyle(
-                                                    color: Colors.black54,
+                                                  style: TextStyle(
+                                                    color: isDark
+                                                        ? Colors.grey.shade400
+                                                        : Colors.black54,
                                                   ),
                                                 ),
                                               ],
                                             ),
                                           ),
-                                          const Icon(
+                                          Icon(
                                             Icons.chevron_right,
-                                            color: Colors.black38,
+                                            color: isDark
+                                                ? Colors.grey.shade600
+                                                : Colors.black38,
                                           ),
                                         ],
                                       ),
@@ -844,9 +891,9 @@ class _DetailScreenState extends State<DetailScreen> {
                                                   12,
                                                 ),
                                                 decoration: BoxDecoration(
-                                                  color: const Color(
-                                                    0xffF5F5F5,
-                                                  ),
+                                                  color: isDark
+                                                      ? const Color(0xFF1E1E1E)
+                                                      : const Color(0xffF5F5F5),
                                                   borderRadius:
                                                       BorderRadius.circular(14),
                                                 ),
@@ -888,13 +935,16 @@ class _DetailScreenState extends State<DetailScreen> {
                                                           Text(
                                                             item['username'] ??
                                                                 '-',
-                                                            style:
-                                                                const TextStyle(
-                                                                  fontWeight:
-                                                                      FontWeight
-                                                                          .w600,
-                                                                  fontSize: 13,
-                                                                ),
+                                                            style: TextStyle(
+                                                              fontWeight:
+                                                                  FontWeight
+                                                                      .w600,
+                                                              fontSize: 13,
+                                                              color: isDark
+                                                                  ? Colors.white
+                                                                  : Colors
+                                                                        .black,
+                                                            ),
                                                             maxLines: 1,
                                                             overflow:
                                                                 TextOverflow
@@ -948,10 +998,11 @@ class _DetailScreenState extends State<DetailScreen> {
                                                         ],
                                                       ),
                                                     ),
-                                                    const Icon(
+                                                    Icon(
                                                       Icons.chevron_right,
-                                                      color: Colors.black26,
-                                                      size: 18,
+                                                      color: isDark
+                                                          ? Colors.grey.shade600
+                                                          : Colors.black38,
                                                     ),
                                                   ],
                                                 ),
@@ -1038,17 +1089,20 @@ class _DetailScreenState extends State<DetailScreen> {
                             width: double.infinity,
                             padding: const EdgeInsets.all(16),
                             decoration: BoxDecoration(
-                              color: Colors.white,
+                              color: isDark
+                                  ? const Color(0xFF1E1E1E)
+                                  : Colors.white,
                               borderRadius: BorderRadius.circular(20),
                             ),
                             child: Column(
                               crossAxisAlignment: CrossAxisAlignment.start,
                               children: [
-                                const Text(
+                                Text(
                                   "Lokasi",
                                   style: TextStyle(
                                     fontWeight: FontWeight.bold,
                                     fontSize: 14,
+                                    color: isDark ? Colors.white : Colors.black,
                                   ),
                                 ),
                                 const SizedBox(height: 12),
@@ -1146,7 +1200,6 @@ class _DetailScreenState extends State<DetailScreen> {
 
                           const SizedBox(height: 20),
 
-                          // ── DESKRIPSI ──
                           if (deskripsi.toString().isNotEmpty)
                             Container(
                               width: double.infinity,
@@ -1179,17 +1232,20 @@ class _DetailScreenState extends State<DetailScreen> {
                             width: double.infinity,
                             padding: const EdgeInsets.all(16),
                             decoration: BoxDecoration(
-                              color: Colors.white,
+                              color: isDark
+                                  ? const Color(0xFF1E1E1E)
+                                  : Colors.white,
                               borderRadius: BorderRadius.circular(20),
                             ),
                             child: Column(
                               crossAxisAlignment: CrossAxisAlignment.start,
                               children: [
-                                const Text(
+                                Text(
                                   "Diposting",
                                   style: TextStyle(
                                     fontWeight: FontWeight.bold,
                                     fontSize: 14,
+                                    color: isDark ? Colors.white : Colors.black,
                                   ),
                                 ),
                                 const SizedBox(height: 12),
@@ -1197,6 +1253,11 @@ class _DetailScreenState extends State<DetailScreen> {
                                   DateFormat(
                                     'dd MMM yyyy • HH:mm',
                                   ).format(createdAt),
+                                  style: TextStyle(
+                                    color: isDark
+                                        ? Colors.grey.shade300
+                                        : Colors.black87,
+                                  ),
                                 ),
                               ],
                             ),
@@ -1349,6 +1410,7 @@ class _KomentarSheetState extends State<KomentarSheet> {
 
   @override
   Widget build(BuildContext context) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
     final bottomInset = MediaQuery.of(context).viewInsets.bottom;
     return SafeArea(
       top: false,
@@ -1361,8 +1423,8 @@ class _KomentarSheetState extends State<KomentarSheet> {
           expand: false,
           builder: (context, scrollController) {
             return Container(
-              decoration: const BoxDecoration(
-                color: Colors.white,
+              decoration: BoxDecoration(
+                color: isDark ? const Color(0xFF1E1E1E) : Colors.white,
                 borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
               ),
               child: Column(
@@ -1372,16 +1434,25 @@ class _KomentarSheetState extends State<KomentarSheet> {
                     width: 40,
                     height: 4,
                     decoration: BoxDecoration(
-                      color: Colors.grey.shade300,
+                      color: isDark
+                          ? Colors.grey.shade600
+                          : Colors.grey.shade300,
                       borderRadius: BorderRadius.circular(10),
                     ),
                   ),
                   const SizedBox(height: 12),
-                  const Text(
+                  Text(
                     "Komentar",
-                    style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
+                    style: TextStyle(
+                      fontWeight: FontWeight.bold,
+                      fontSize: 16,
+                      color: isDark ? Colors.white : Colors.black,
+                    ),
                   ),
-                  const Divider(height: 20),
+                  Divider(
+                    height: 20,
+                    color: isDark ? Colors.grey.shade700 : Colors.grey.shade300,
+                  ),
                   Expanded(
                     child: StreamBuilder<QuerySnapshot>(
                       stream: firestore
@@ -1398,11 +1469,15 @@ class _KomentarSheetState extends State<KomentarSheet> {
                         }
                         final komentar = snapshot.data!.docs;
                         if (komentar.isEmpty) {
-                          return const Center(
+                          return Center(
                             child: Text(
                               "Belum ada komentar.\nJadi yang pertama!",
                               textAlign: TextAlign.center,
-                              style: TextStyle(color: Colors.black45),
+                              style: TextStyle(
+                                color: isDark
+                                    ? Colors.grey.shade400
+                                    : Colors.black45,
+                              ),
                             ),
                           );
                         }
@@ -1418,19 +1493,62 @@ class _KomentarSheetState extends State<KomentarSheet> {
                                     (k['created_at'] as Timestamp).toDate(),
                                   )
                                 : '';
+                            final username = k['username'] ?? 'Pengguna';
+
                             return Padding(
                               padding: const EdgeInsets.only(bottom: 16),
                               child: Row(
                                 crossAxisAlignment: CrossAxisAlignment.start,
                                 children: [
-                                  CircleAvatar(
-                                    radius: 18,
-                                    backgroundColor: Colors.blue.shade100,
-                                    child: const Icon(
-                                      Icons.person,
-                                      color: Colors.blue,
-                                      size: 18,
-                                    ),
+                                  // Fetch user profile image
+                                  FutureBuilder<DocumentSnapshot>(
+                                    future: firestore
+                                        .collection('users')
+                                        .where('username', isEqualTo: username)
+                                        .limit(1)
+                                        .get()
+                                        .then(
+                                          (qs) => qs.docs.isNotEmpty
+                                              ? qs.docs.first
+                                              : throw Exception(
+                                                  'User not found',
+                                                ),
+                                        ),
+                                    builder: (context, snapshot) {
+                                      Uint8List? profileImageBytes;
+                                      if (snapshot.hasData &&
+                                          snapshot.data != null) {
+                                        final userData =
+                                            snapshot.data!.data()
+                                                as Map<String, dynamic>?;
+                                        final imageData =
+                                            userData?['profileImageBytes'];
+                                        if (imageData != null) {
+                                          try {
+                                            profileImageBytes =
+                                                imageData.bytes as Uint8List;
+                                          } catch (_) {}
+                                        }
+                                      }
+
+                                      return CircleAvatar(
+                                        radius: 18,
+                                        backgroundColor: const Color(
+                                          0xFF5E7AC4,
+                                        ).withOpacity(0.2),
+                                        backgroundImage:
+                                            profileImageBytes != null
+                                            ? MemoryImage(profileImageBytes)
+                                            : null,
+                                        child: profileImageBytes == null
+                                            ? const Icon(
+                                                Icons.person,
+                                                color: Color(0xFF5E7AC4),
+                                                size: 18,
+                                              )
+                                            : null,
+                                      );
+                                    },
                                   ),
                                   const SizedBox(width: 10),
                                   Expanded(
@@ -1443,22 +1561,34 @@ class _KomentarSheetState extends State<KomentarSheet> {
                                               MainAxisAlignment.spaceBetween,
                                           children: [
                                             Text(
-                                              k['username'] ?? 'Pengguna',
-                                              style: const TextStyle(
+                                              username,
+                                              style: TextStyle(
                                                 fontWeight: FontWeight.bold,
+                                                color: isDark
+                                                    ? Colors.white
+                                                    : Colors.black,
                                               ),
                                             ),
                                             Text(
                                               waktu,
-                                              style: const TextStyle(
-                                                color: Colors.black38,
+                                              style: TextStyle(
+                                                color: isDark
+                                                    ? Colors.grey.shade500
+                                                    : Colors.black38,
                                                 fontSize: 12,
                                               ),
                                             ),
                                           ],
                                         ),
                                         const SizedBox(height: 4),
-                                        Text(k['isi'] ?? ''),
+                                        Text(
+                                          k['isi'] ?? '',
+                                          style: TextStyle(
+                                            color: isDark
+                                                ? Colors.grey.shade200
+                                                : Colors.black87,
+                                          ),
+                                        ),
                                       ],
                                     ),
                                   ),
@@ -1482,17 +1612,26 @@ class _KomentarSheetState extends State<KomentarSheet> {
                             maxLines: null,
                             textInputAction: TextInputAction.send,
                             onSubmitted: (_) => _kirimKomentar(),
+                            style: TextStyle(
+                              color: isDark ? Colors.white : Colors.black,
+                            ),
                             decoration: InputDecoration(
                               hintText: _sudahLogin
                                   ? 'Tulis komentar...'
                                   : 'Login untuk berkomentar...',
-                              hintStyle: const TextStyle(color: Colors.black38),
+                              hintStyle: TextStyle(
+                                color: isDark
+                                    ? Colors.grey.shade500
+                                    : Colors.black38,
+                              ),
                               contentPadding: const EdgeInsets.symmetric(
                                 horizontal: 16,
                                 vertical: 12,
                               ),
                               filled: true,
-                              fillColor: Colors.grey.shade100,
+                              fillColor: isDark
+                                  ? const Color(0xFF2A2A3E)
+                                  : Colors.grey.shade100,
                               border: OutlineInputBorder(
                                 borderRadius: BorderRadius.circular(14),
                                 borderSide: BorderSide.none,

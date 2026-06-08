@@ -6,6 +6,8 @@ import 'package:geolocator/geolocator.dart';
 import 'package:geocoding/geocoding.dart';
 import 'package:image_picker/image_picker.dart';
 import 'dart:typed_data';
+import 'package:wongiwak/main.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
 class SettingsScreen extends StatefulWidget {
   const SettingsScreen({super.key});
@@ -28,6 +30,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
   double? latitude;
   double? longitude;
   bool isRealTimeLocationActive = false;
+  bool isDarkMode = false;
   StreamSubscription? _locationStream;
 
   @override
@@ -38,7 +41,14 @@ class _SettingsScreenState extends State<SettingsScreen> {
     locationController = TextEditingController();
     occupationController = TextEditingController();
     alamatController = TextEditingController();
+    _loadDarkModePreference();
     _loadUserData();
+  }
+
+  void _loadDarkModePreference() async {
+    final prefs = await SharedPreferences.getInstance();
+    final isDark = prefs.getBool('isDarkMode') ?? false;
+    setState(() => isDarkMode = isDark);
   }
 
   @override
@@ -60,7 +70,6 @@ class _SettingsScreenState extends State<SettingsScreen> {
             .get();
 
         if (doc.exists) {
-          // PERBAIKAN: Ambil data sebagai Map untuk mencegah error "field does not exist"
           final data = doc.data();
 
           if (mounted) {
@@ -367,7 +376,10 @@ class _SettingsScreenState extends State<SettingsScreen> {
           .update(updateData);
 
       if (mounted) {
-        _showSnackBar('✓ Profil berhasil diperbarui');
+        _showSuccessDialog(
+          'Perubahan Disimpan!',
+          'Profil Anda telah berhasil diperbarui.',
+        );
         Future.delayed(const Duration(milliseconds: 800), () {
           if (mounted) {
             setState(() {
@@ -392,22 +404,119 @@ class _SettingsScreenState extends State<SettingsScreen> {
     ).showSnackBar(SnackBar(content: Text(message)));
   }
 
+  void _showSuccessDialog(String title, String message) {
+    if (!mounted) return;
+    showDialog(
+      context: context,
+      barrierDismissible: true,
+      builder: (BuildContext context) {
+        return Dialog(
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(20),
+          ),
+          child: Container(
+            padding: const EdgeInsets.all(32),
+            decoration: BoxDecoration(
+              color: Colors.white,
+              borderRadius: BorderRadius.circular(20),
+            ),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                // Check Icon dengan Animasi
+                TweenAnimationBuilder<double>(
+                  tween: Tween(begin: 0, end: 1),
+                  duration: const Duration(milliseconds: 600),
+                  builder: (context, value, child) {
+                    return Transform.scale(
+                      scale: value,
+                      child: Container(
+                        width: 70,
+                        height: 70,
+                        decoration: BoxDecoration(
+                          shape: BoxShape.circle,
+                          gradient: LinearGradient(
+                            colors: [
+                              const Color(0xFF5E7AC4).withOpacity(0.8),
+                              const Color(0xFF5E7AC4),
+                            ],
+                            begin: Alignment.topLeft,
+                            end: Alignment.bottomRight,
+                          ),
+                          boxShadow: [
+                            BoxShadow(
+                              color: const Color(0xFF5E7AC4).withOpacity(0.3),
+                              blurRadius: 20,
+                              offset: const Offset(0, 8),
+                            ),
+                          ],
+                        ),
+                        child: const Icon(
+                          Icons.check_rounded,
+                          color: Colors.white,
+                          size: 38,
+                        ),
+                      ),
+                    );
+                  },
+                ),
+                const SizedBox(height: 20),
+                // Judul
+                Text(
+                  title,
+                  style: const TextStyle(
+                    fontSize: 20,
+                    fontWeight: FontWeight.w700,
+                    color: Color(0xFF1A1A2E),
+                  ),
+                  textAlign: TextAlign.center,
+                ),
+                const SizedBox(height: 10),
+                // Deskripsi
+                Text(
+                  message,
+                  style: TextStyle(
+                    fontSize: 14,
+                    color: Colors.grey.shade600,
+                    height: 1.5,
+                  ),
+                  textAlign: TextAlign.center,
+                ),
+              ],
+            ),
+          ),
+        );
+      },
+    );
+
+    // Auto-close setelah 1.5 detik
+    Future.delayed(const Duration(milliseconds: 1500), () {
+      if (mounted && Navigator.canPop(context)) {
+        Navigator.pop(context);
+      }
+    });
+  }
+
   @override
   Widget build(BuildContext context) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+
     return Scaffold(
-      backgroundColor: Colors.grey.shade50,
+      backgroundColor: isDark ? const Color(0xFF121212) : Colors.white,
       appBar: AppBar(
-        backgroundColor: Colors.white,
-        elevation: 0.5,
+        elevation: 0,
         leading: GestureDetector(
           onTap: () => Navigator.pop(context),
-          child: const Icon(Icons.arrow_back, color: Colors.black),
+          child: Icon(
+            Icons.arrow_back,
+            color: isDark ? Colors.white : Colors.black,
+          ),
         ),
         automaticallyImplyLeading: false,
-        title: const Text(
+        title: Text(
           'Pengaturan Profil',
           style: TextStyle(
-            color: Colors.black,
+            color: isDark ? Colors.white : Colors.black,
             fontWeight: FontWeight.bold,
             fontSize: 18,
           ),
@@ -434,7 +543,9 @@ class _SettingsScreenState extends State<SettingsScreen> {
                           ),
                           child: CircleAvatar(
                             radius: 60,
-                            backgroundColor: Colors.grey.shade200,
+                            backgroundColor: isDark
+                                ? const Color(0xFF2A2A2A)
+                                : Colors.grey.shade200,
                             backgroundImage: selectedImageBytes != null
                                 ? MemoryImage(selectedImageBytes!)
                                 : null,
@@ -442,7 +553,9 @@ class _SettingsScreenState extends State<SettingsScreen> {
                                 ? Icon(
                                     Icons.person,
                                     size: 60,
-                                    color: Colors.grey.shade400,
+                                    color: isDark
+                                        ? Colors.grey.shade600
+                                        : Colors.grey.shade400,
                                   )
                                 : null,
                           ),
@@ -476,7 +589,9 @@ class _SettingsScreenState extends State<SettingsScreen> {
                     Text(
                       'Ubah Foto Profil',
                       style: TextStyle(
-                        color: Colors.grey.shade600,
+                        color: isDark
+                            ? Colors.grey.shade400
+                            : Colors.grey.shade600,
                         fontSize: 12,
                       ),
                     ),
@@ -484,9 +599,13 @@ class _SettingsScreenState extends State<SettingsScreen> {
                 ),
               ),
               const SizedBox(height: 32),
-              const Text(
+              Text(
                 'Informasi Profil',
-                style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+                style: TextStyle(
+                  fontSize: 18,
+                  fontWeight: FontWeight.bold,
+                  color: isDark ? Colors.white : Colors.black,
+                ),
               ),
               const SizedBox(height: 20),
               _buildTextField(
@@ -510,11 +629,13 @@ class _SettingsScreenState extends State<SettingsScreen> {
               Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  const Text(
+                  Text(
                     'Alamat Lengkap',
                     style: TextStyle(
                       fontWeight: FontWeight.w600,
-                      color: Color(0xFF5E7AC4),
+                      color: isDark
+                          ? const Color(0xFF9BAFFF)
+                          : const Color(0xFF5E7AC4),
                       fontSize: 13,
                     ),
                   ),
@@ -528,17 +649,23 @@ class _SettingsScreenState extends State<SettingsScreen> {
                           decoration: InputDecoration(
                             hintText: 'Alamat akan terisi otomatis dari GPS',
                             filled: true,
-                            fillColor: Colors.white,
+                            fillColor: isDark
+                                ? const Color(0xFF2A2A3E)
+                                : Colors.white,
                             border: OutlineInputBorder(
                               borderRadius: BorderRadius.circular(10),
                               borderSide: BorderSide(
-                                color: Colors.grey.shade200,
+                                color: isDark
+                                    ? const Color(0xFF444444)
+                                    : Colors.grey.shade200,
                               ),
                             ),
                             enabledBorder: OutlineInputBorder(
                               borderRadius: BorderRadius.circular(10),
                               borderSide: BorderSide(
-                                color: Colors.grey.shade200,
+                                color: isDark
+                                    ? const Color(0xFF444444)
+                                    : Colors.grey.shade200,
                               ),
                             ),
                             focusedBorder: OutlineInputBorder(
@@ -552,7 +679,14 @@ class _SettingsScreenState extends State<SettingsScreen> {
                               horizontal: 16,
                               vertical: 14,
                             ),
-                            hintStyle: TextStyle(color: Colors.grey.shade400),
+                            hintStyle: TextStyle(
+                              color: isDark
+                                  ? Colors.grey.shade600
+                                  : Colors.grey.shade400,
+                            ),
+                          ),
+                          style: TextStyle(
+                            color: isDark ? Colors.white : Colors.black,
                           ),
                         ),
                       ),
@@ -586,17 +720,19 @@ class _SettingsScreenState extends State<SettingsScreen> {
                   const SizedBox(height: 6),
                   Row(
                     children: [
-                      const Icon(
+                      Icon(
                         Icons.info_outline,
                         size: 13,
-                        color: Colors.black38,
+                        color: isDark ? Colors.grey.shade600 : Colors.black38,
                       ),
                       const SizedBox(width: 4),
                       Text(
                         'Tekan icon GPS untuk mengisi alamat otomatis',
                         style: TextStyle(
                           fontSize: 11,
-                          color: Colors.grey.shade500,
+                          color: isDark
+                              ? Colors.grey.shade600
+                              : Colors.grey.shade500,
                         ),
                       ),
                     ],
@@ -611,15 +747,21 @@ class _SettingsScreenState extends State<SettingsScreen> {
                   vertical: 12,
                 ),
                 decoration: BoxDecoration(
-                  color: Colors.white,
+                  color: isDark ? const Color(0xFF1E1E1E) : Colors.white,
                   borderRadius: BorderRadius.circular(10),
-                  border: Border.all(color: Colors.grey.shade200),
+                  border: Border.all(
+                    color: isDark
+                        ? const Color(0xFF444444)
+                        : Colors.grey.shade200,
+                  ),
                 ),
                 child: Row(
                   children: [
-                    const Icon(
+                    Icon(
                       Icons.location_searching,
-                      color: Color(0xFF5E7AC4),
+                      color: isDark
+                          ? const Color(0xFF9BAFFF)
+                          : const Color(0xFF5E7AC4),
                       size: 20,
                     ),
                     const SizedBox(width: 12),
@@ -627,7 +769,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
-                          const Text(
+                          Text(
                             'Lacak Lokasi Real-time',
                             style: TextStyle(
                               fontWeight: FontWeight.w600,
@@ -647,6 +789,67 @@ class _SettingsScreenState extends State<SettingsScreen> {
                     Switch(
                       value: isRealTimeLocationActive,
                       onChanged: _toggleRealTimeLocation,
+                      activeColor: const Color(0xFF5E7AC4),
+                    ),
+                  ],
+                ),
+              ),
+              const SizedBox(height: 16),
+              // Toggle Dark Mode
+              Container(
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 16,
+                  vertical: 12,
+                ),
+                decoration: BoxDecoration(
+                  color: isDark ? const Color(0xFF1E1E1E) : Colors.white,
+                  borderRadius: BorderRadius.circular(10),
+                  border: Border.all(
+                    color: isDark
+                        ? const Color(0xFF444444)
+                        : Colors.grey.shade200,
+                  ),
+                ),
+                child: Row(
+                  children: [
+                    Icon(
+                      Icons.dark_mode_rounded,
+                      color: isDark
+                          ? const Color(0xFF9BAFFF)
+                          : const Color(0xFF5E7AC4),
+                      size: 20,
+                    ),
+                    const SizedBox(width: 12),
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            'Mode Gelap',
+                            style: TextStyle(
+                              fontWeight: FontWeight.w600,
+                              fontSize: 13,
+                              color: isDark ? Colors.white : Colors.black,
+                            ),
+                          ),
+                          Text(
+                            'Aktifkan tampilan gelap untuk mengurangi kelelahan mata',
+                            style: TextStyle(
+                              fontSize: 11,
+                              color: isDark
+                                  ? Colors.grey.shade500
+                                  : Colors.grey.shade600,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                    Switch(
+                      value: isDarkMode,
+                      onChanged: (value) {
+                        setState(() => isDarkMode = value);
+                        AppTheme.setDarkMode(value);
+                      },
                       activeColor: const Color(0xFF5E7AC4),
                     ),
                   ],
@@ -726,6 +929,8 @@ class _SettingsScreenState extends State<SettingsScreen> {
     required TextEditingController controller,
     required String hintText,
   }) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -740,17 +945,22 @@ class _SettingsScreenState extends State<SettingsScreen> {
         const SizedBox(height: 8),
         TextField(
           controller: controller,
+          style: TextStyle(color: isDark ? Colors.white : Colors.black),
           decoration: InputDecoration(
             hintText: hintText,
             filled: true,
-            fillColor: Colors.white,
+            fillColor: isDark ? const Color(0xFF2A2A3E) : Colors.white,
             border: OutlineInputBorder(
               borderRadius: BorderRadius.circular(10),
-              borderSide: BorderSide(color: Colors.grey.shade200),
+              borderSide: BorderSide(
+                color: isDark ? const Color(0xFF444444) : Colors.grey.shade200,
+              ),
             ),
             enabledBorder: OutlineInputBorder(
               borderRadius: BorderRadius.circular(10),
-              borderSide: BorderSide(color: Colors.grey.shade200),
+              borderSide: BorderSide(
+                color: isDark ? const Color(0xFF444444) : Colors.grey.shade200,
+              ),
             ),
             focusedBorder: OutlineInputBorder(
               borderRadius: BorderRadius.circular(10),
@@ -760,7 +970,9 @@ class _SettingsScreenState extends State<SettingsScreen> {
               horizontal: 16,
               vertical: 14,
             ),
-            hintStyle: TextStyle(color: Colors.grey.shade400),
+            hintStyle: TextStyle(
+              color: isDark ? Colors.grey.shade600 : Colors.grey.shade400,
+            ),
           ),
         ),
       ],
