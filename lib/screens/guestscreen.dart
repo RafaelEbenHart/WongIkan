@@ -50,7 +50,7 @@ class _GuestScreenState extends State<GuestScreen> {
         elevation: 0,
         automaticallyImplyLeading: false,
         title: const Text(
-          'WONGIWAK',
+          'WONGIKAN',
           style: TextStyle(
             color: Color(0xFF1A1A2E),
             fontWeight: FontWeight.w800,
