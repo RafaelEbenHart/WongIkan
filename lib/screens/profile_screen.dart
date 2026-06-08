@@ -104,8 +104,8 @@ class _ProfileScreenState extends State<ProfileScreen>
     return Scaffold(
       backgroundColor: Colors.grey.shade50,
       appBar: AppBar(
-        backgroundColor: Colors.white,
-        elevation: 0.5,
+        backgroundColor: Colors.grey.shade50,
+        elevation: 0,
         leading: GestureDetector(
           onTap: () => Navigator.pop(context),
           child: const Icon(Icons.arrow_back, color: Colors.black),
@@ -708,7 +708,7 @@ class _FavoriteTab extends StatelessWidget {
                             top: Radius.circular(12),
                           ),
                           child: SizedBox(
-                            height: 110,
+                            height: 100,
                             width: double.infinity,
                             child: gambar.toString().isNotEmpty
                                 ? Image.memory(

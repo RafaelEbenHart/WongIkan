@@ -1,4 +1,5 @@
 import 'dart:convert';
+import 'dart:typed_data';
 
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
@@ -256,14 +257,51 @@ class _TokoScreenState extends State<TokoScreen> {
               ),
               child: Row(
                 children: [
-                  CircleAvatar(
-                    radius: 28,
-                    backgroundColor: Colors.blue.shade100,
-                    child: const Icon(
-                      Icons.person,
-                      color: Colors.blue,
-                      size: 28,
-                    ),
+                  StreamBuilder<DocumentSnapshot>(
+                    stream: firestore
+                        .collection('users')
+                        .doc(widget.userId)
+                        .snapshots(),
+                    builder: (context, userSnapshot) {
+                      Uint8List? profileImageBytes;
+                      if (userSnapshot.hasData && userSnapshot.data!.exists) {
+                        try {
+                          final userData =
+                              userSnapshot.data!.data() as Map<String, dynamic>;
+                          if (userData['profileImageBytes'] != null) {
+                            // Handle Firestore Blob type
+                            final imageData = userData['profileImageBytes'];
+                            if (imageData is Blob) {
+                              profileImageBytes = imageData.bytes;
+                            } else if (imageData is String) {
+                              // Fallback untuk base64 string
+                              profileImageBytes = base64Decode(imageData);
+                            }
+                          }
+                        } catch (e) {
+                          debugPrint('Error decoding profile image: $e');
+                          profileImageBytes = null;
+                        }
+                      }
+
+                      if (profileImageBytes != null &&
+                          profileImageBytes!.isNotEmpty) {
+                        return CircleAvatar(
+                          radius: 28,
+                          backgroundImage: MemoryImage(profileImageBytes!),
+                        );
+                      }
+
+                      return CircleAvatar(
+                        radius: 28,
+                        backgroundColor: Colors.blue.shade100,
+                        child: const Icon(
+                          Icons.person,
+                          color: Colors.blue,
+                          size: 28,
+                        ),
+                      );
+                    },
                   ),
                   const SizedBox(width: 14),
                   Expanded(
