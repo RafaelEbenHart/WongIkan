@@ -343,6 +343,7 @@ class _ProfileScreenState extends State<ProfileScreen>
                 ),
               ];
             },
+
             body: TabBarView(
               controller: _tabController,
               children: [
@@ -379,6 +380,10 @@ class _ProfileScreenState extends State<ProfileScreen>
         ),
       ],
     );
+  }
+
+  Widget _dividerStat() {
+    return Container(width: 1, height: 30, color: Colors.grey.shade200);
   }
 
   Widget _statItemStream({
@@ -932,19 +937,6 @@ class FullImageScreenBytes extends StatelessWidget {
         automaticallyImplyLeading: false,
       ),
       body: Center(child: Image.memory(imageBytes, fit: BoxFit.contain)),
-    );
-  }
-
-  Widget _imagePlaceholder() {
-    return Container(
-      color: const Color(0xFFF0F4FF),
-      child: const Center(
-        child: Icon(
-          Icons.image_not_supported_rounded,
-          color: Color(0xFFB8C8E8),
-          size: 28,
-        ),
-      ),
     );
   }
 }
