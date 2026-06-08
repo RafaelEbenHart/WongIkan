@@ -24,6 +24,8 @@ class _SettingsScreenState extends State<SettingsScreen> {
   Uint8List? selectedImageBytes;
   bool isUploading = false;
   bool isLoadingAlamat = false;
+  double? latitude;
+  double? longitude;
 
   @override
   void initState() {
@@ -64,6 +66,9 @@ class _SettingsScreenState extends State<SettingsScreen> {
               occupationController.text =
                   data?['occupation'] ?? 'Penjual ikan segar';
               alamatController.text = data?['alamat'] ?? '';
+              // Muat koordinat dari Firebase
+              latitude = data?['latitude'] as double?;
+              longitude = data?['longitude'] as double?;
             });
           }
         }
@@ -106,6 +111,22 @@ class _SettingsScreenState extends State<SettingsScreen> {
           accuracy: LocationAccuracy.high,
         ),
       );
+
+      // Simpan koordinat ke variabel lokal
+      latitude = position.latitude;
+      longitude = position.longitude;
+
+      // Simpan koordinat ke Firebase segera
+      if (currentUser != null) {
+        try {
+          await FirebaseFirestore.instance
+              .collection('users')
+              .doc(currentUser!.uid)
+              .update({'latitude': latitude, 'longitude': longitude});
+        } catch (e) {
+          debugPrint('Error menyimpan koordinat ke Firebase: $e');
+        }
+      }
 
       // 3. Terjemahkan Koordinat Menjadi Alamat (Bagian Rawan Null)
       List<Placemark> placemarks = [];
@@ -151,14 +172,18 @@ class _SettingsScreenState extends State<SettingsScreen> {
 
         if (alamatLengkap.isNotEmpty) {
           setState(() => alamatController.text = alamatLengkap);
-          _showSnackBar('✓ Alamat berhasil didapatkan');
+          _showSnackBar(
+            '✓ Alamat & Koordinat (${latitude?.toStringAsFixed(4)}, ${longitude?.toStringAsFixed(4)}) berhasil disimpan',
+          );
         } else {
           // Jaga-jaga kalau semua field alamat dari satelit nilainya kosong
           setState(
             () => alamatController.text =
                 '${position.latitude}, ${position.longitude}',
           );
-          _showSnackBar('Hanya koordinat angka yang didapat dari satelit');
+          _showSnackBar(
+            'Hanya koordinat (${latitude?.toStringAsFixed(4)}, ${longitude?.toStringAsFixed(4)}) yang disimpan',
+          );
         }
       } else {
         _showSnackBar('Alamat tidak ditemukan di titik ini');
@@ -214,6 +239,12 @@ class _SettingsScreenState extends State<SettingsScreen> {
         'occupation': occupationController.text.trim(),
         'alamat': alamatController.text.trim(),
       };
+
+      // Jika ada koordinat yang tersimpan, sertakan dalam update
+      if (latitude != null && longitude != null) {
+        updateData['latitude'] = latitude;
+        updateData['longitude'] = longitude;
+      }
 
       if (selectedImageBytes != null) {
         try {
