@@ -5,6 +5,7 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:wongiwak/screens/sign_in_screen.dart';
+import 'detail_screen.dart';
 import 'error/login.dart';
 import 'settings_screen.dart';
 
@@ -90,8 +91,8 @@ class _ProfileScreenState extends State<ProfileScreen> {
     return Scaffold(
       backgroundColor: Colors.grey.shade50,
       appBar: AppBar(
-        backgroundColor: Colors.white,
-        elevation: 0.5,
+        backgroundColor: Colors.grey.shade50,
+        elevation: 0,
         leading: GestureDetector(
           onTap: () => Navigator.pop(context),
           child: const Icon(Icons.arrow_back, color: Colors.black),
@@ -140,16 +141,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
                 // Profile Header
                 Container(
                   padding: const EdgeInsets.all(24),
-                  decoration: BoxDecoration(
-                    gradient: LinearGradient(
-                      begin: Alignment.topLeft,
-                      end: Alignment.bottomRight,
-                      colors: [
-                        const Color(0xFF5E7AC4).withOpacity(0.1),
-                        const Color(0xFF5E7AC4).withOpacity(0.05),
-                      ],
-                    ),
-                  ),
+                  decoration: BoxDecoration(color: Colors.grey.shade50),
                   child: Column(
                     children: [
                       // Profile Picture
@@ -440,9 +432,9 @@ class _ProfileScreenState extends State<ProfileScreen> {
                         gridDelegate:
                             const SliverGridDelegateWithFixedCrossAxisCount(
                               crossAxisCount: 2,
-                              crossAxisSpacing: 12,
-                              mainAxisSpacing: 12,
-                              childAspectRatio: 0.72,
+                              crossAxisSpacing: 10,
+                              mainAxisSpacing: 10,
+                              childAspectRatio: 0.8,
                             ),
                         itemBuilder: (context, index) {
                           final postData =
@@ -451,104 +443,116 @@ class _ProfileScreenState extends State<ProfileScreen> {
                           final price = postData['harga'] ?? 'Hubungi';
                           final imageUrl = postData['gambar'] ?? '';
                           final category = postData['kategori'] ?? 'Ikan';
+                          final postId = posts[index].id;
 
-                          return Card(
-                            elevation: 2,
-                            shape: RoundedRectangleBorder(
-                              borderRadius: BorderRadius.circular(12),
-                            ),
-                            child: Column(
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              children: [
-                                Expanded(
-                                  child: ClipRRect(
-                                    borderRadius: const BorderRadius.vertical(
-                                      top: Radius.circular(12),
-                                    ),
-                                    child: Container(
-                                      width: double.infinity,
-                                      color: Colors.grey.shade200,
-                                      child: imageUrl.isNotEmpty
-                                          ? (imageUrl.startsWith('http')
-                                                ? Image.network(
-                                                    imageUrl,
-                                                    fit: BoxFit.cover,
-                                                    errorBuilder:
-                                                        (
-                                                          context,
-                                                          error,
-                                                          stackTrace,
-                                                        ) {
-                                                          return Icon(
-                                                            Icons
-                                                                .image_not_supported,
-                                                            color: Colors
-                                                                .grey
-                                                                .shade400,
-                                                          );
-                                                        },
-                                                  )
-                                                : Image.memory(
-                                                    base64Decode(imageUrl),
-                                                    fit: BoxFit.cover,
-                                                    errorBuilder:
-                                                        (
-                                                          context,
-                                                          error,
-                                                          stackTrace,
-                                                        ) {
-                                                          return Icon(
-                                                            Icons
-                                                                .image_not_supported,
-                                                            color: Colors
-                                                                .grey
-                                                                .shade400,
-                                                          );
-                                                        },
-                                                  ))
-                                          : Icon(
-                                              Icons.image_not_supported,
-                                              color: Colors.grey.shade400,
-                                            ),
+                          return InkWell(
+                            onTap: () {
+                              Navigator.push(
+                                context,
+                                MaterialPageRoute(
+                                  builder: (context) =>
+                                      DetailScreen(ikanId: postId),
+                                ),
+                              );
+                            },
+                            child: Card(
+                              elevation: 2,
+                              shape: RoundedRectangleBorder(
+                                borderRadius: BorderRadius.circular(12),
+                              ),
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  Expanded(
+                                    child: ClipRRect(
+                                      borderRadius: const BorderRadius.vertical(
+                                        top: Radius.circular(12),
+                                      ),
+                                      child: Container(
+                                        width: double.infinity,
+                                        color: Colors.grey.shade200,
+                                        child: imageUrl.isNotEmpty
+                                            ? (imageUrl.startsWith('http')
+                                                  ? Image.network(
+                                                      imageUrl,
+                                                      fit: BoxFit.cover,
+                                                      errorBuilder:
+                                                          (
+                                                            context,
+                                                            error,
+                                                            stackTrace,
+                                                          ) {
+                                                            return Icon(
+                                                              Icons
+                                                                  .image_not_supported,
+                                                              color: Colors
+                                                                  .grey
+                                                                  .shade400,
+                                                            );
+                                                          },
+                                                    )
+                                                  : Image.memory(
+                                                      base64Decode(imageUrl),
+                                                      fit: BoxFit.cover,
+                                                      errorBuilder:
+                                                          (
+                                                            context,
+                                                            error,
+                                                            stackTrace,
+                                                          ) {
+                                                            return Icon(
+                                                              Icons
+                                                                  .image_not_supported,
+                                                              color: Colors
+                                                                  .grey
+                                                                  .shade400,
+                                                            );
+                                                          },
+                                                    ))
+                                            : Icon(
+                                                Icons.image_not_supported,
+                                                color: Colors.grey.shade400,
+                                              ),
+                                      ),
                                     ),
                                   ),
-                                ),
-                                Padding(
-                                  padding: const EdgeInsets.all(10),
-                                  child: Column(
-                                    crossAxisAlignment:
-                                        CrossAxisAlignment.start,
-                                    children: [
-                                      Text(
-                                        name,
-                                        maxLines: 1,
-                                        overflow: TextOverflow.ellipsis,
-                                        style: const TextStyle(
-                                          fontWeight: FontWeight.bold,
-                                          fontSize: 13,
+                                  Padding(
+                                    padding: const EdgeInsets.all(8),
+                                    child: Column(
+                                      crossAxisAlignment:
+                                          CrossAxisAlignment.start,
+                                      children: [
+                                        Text(
+                                          name,
+                                          maxLines: 1,
+                                          overflow: TextOverflow.ellipsis,
+                                          style: const TextStyle(
+                                            fontWeight: FontWeight.bold,
+                                            fontSize: 13,
+                                          ),
                                         ),
-                                      ),
-                                      const SizedBox(height: 4),
-                                      Text(
-                                        category,
-                                        style: TextStyle(
-                                          color: Colors.grey.shade600,
-                                          fontSize: 11,
+                                        const SizedBox(height: 4),
+                                        Text(
+                                          category,
+                                          style: TextStyle(
+                                            color: Colors.grey.shade600,
+                                            fontSize: 11,
+                                          ),
                                         ),
-                                      ),
-                                      const SizedBox(height: 6),
-                                      Text(
-                                        price,
-                                        style: const TextStyle(
-                                          color: Color(0xFF5E7AC4),
-                                          fontSize: 13,
-                                          fontWeight: FontWeight.bold,
+                                        const SizedBox(height: 6),
+                                        Text(
+                                          price,
+                                          style: const TextStyle(
+                                            color: Color(0xFF5E7AC4),
+                                            fontSize: 13,
+                                            fontWeight: FontWeight.bold,
+                                          ),
                                         ),
-                                      ),
-                                    ],
+                                      ],
+                                    ),
                                   ),
-                                ),
-                              ],
+                                ],
+                              ),
                             ),
                           );
                         },
