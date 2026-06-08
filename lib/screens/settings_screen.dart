@@ -23,7 +23,6 @@ class _SettingsScreenState extends State<SettingsScreen> {
   XFile? selectedImage;
   Uint8List? selectedImageBytes;
   bool isUploading = false;
-  bool isLoadingAlamat = false;
 
   @override
   void initState() {
@@ -53,121 +52,15 @@ class _SettingsScreenState extends State<SettingsScreen> {
             .doc(currentUser!.uid)
             .get();
 
-        if (doc.exists) {
-          // PERBAIKAN: Ambil data sebagai Map untuk mencegah error "field does not exist"
-          final data = doc.data() as Map<String, dynamic>?;
-
-          if (mounted) {
-            setState(() {
-              usernameController.text = data?['username'] ?? '';
-              locationController.text = data?['location'] ?? '';
-              occupationController.text =
-                  data?['occupation'] ?? 'Penjual ikan segar';
-              alamatController.text = data?['alamat'] ?? '';
-            });
-          }
-        }
-      } catch (e) {
-        debugPrint('Error loading user data: $e');
+      if (doc.exists) {
+        final data = doc.data() as Map<String, dynamic>;
+        setState(() {
+          usernameController.text = data['username'] ?? '';
+          locationController.text = data['location'] ?? '';
+          occupationController.text =
+              data['occupation'] ?? 'Penjual ikan segar';
+        });
       }
-    }
-  }
-
-  Future<void> _ambilAlamatDariGPS() async {
-    setState(() => isLoadingAlamat = true);
-
-    try {
-      // 1. Cek Service & Permission GPS
-      bool serviceEnabled = await Geolocator.isLocationServiceEnabled();
-      if (!serviceEnabled) {
-        _showSnackBar(
-          'Layanan lokasi (GPS) tidak aktif. Silakan nyalakan dulu.',
-        );
-        return;
-      }
-
-      LocationPermission permission = await Geolocator.checkPermission();
-      if (permission == LocationPermission.denied) {
-        permission = await Geolocator.requestPermission();
-        if (permission == LocationPermission.denied) {
-          _showSnackBar('Izin lokasi ditolak');
-          return;
-        }
-      }
-
-      if (permission == LocationPermission.deniedForever) {
-        _showSnackBar('Izin lokasi ditolak permanen. Cek pengaturan aplikasi');
-        return;
-      }
-
-      // 2. Ambil Titik Koordinat
-      final position = await Geolocator.getCurrentPosition(
-        locationSettings: const LocationSettings(
-          accuracy: LocationAccuracy.high,
-        ),
-      );
-
-      // 3. Terjemahkan Koordinat Menjadi Alamat (Bagian Rawan Null)
-      List<Placemark> placemarks = [];
-      try {
-        placemarks = await placemarkFromCoordinates(
-          position.latitude,
-          position.longitude,
-        );
-      } catch (geocodingError) {
-        // Jika geocoding bawaan HP/Emulator gagal, kita tangkap disini agar tidak crash
-        debugPrint('Geocoding error: $geocodingError');
-        _showSnackBar(
-          'Koordinat didapat, tapi gagal menerjemahkan nama jalan.',
-        );
-        return;
-      }
-
-      // 4. Susun Alamat dengan Sangat Aman
-      if (placemarks.isNotEmpty) {
-        final place = placemarks.first;
-        final List<String> alamatList = [];
-
-        // Cek satu-satu dengan pasti kalau datanya tidak null dan tidak kosong
-        if (place.street != null && place.street!.trim().isNotEmpty) {
-          alamatList.add(place.street!.trim());
-        }
-        if (place.subLocality != null && place.subLocality!.trim().isNotEmpty) {
-          alamatList.add(place.subLocality!.trim());
-        }
-        if (place.locality != null && place.locality!.trim().isNotEmpty) {
-          alamatList.add(place.locality!.trim());
-        }
-        if (place.subAdministrativeArea != null &&
-            place.subAdministrativeArea!.trim().isNotEmpty) {
-          alamatList.add(place.subAdministrativeArea!.trim());
-        }
-        if (place.administrativeArea != null &&
-            place.administrativeArea!.trim().isNotEmpty) {
-          alamatList.add(place.administrativeArea!.trim());
-        }
-
-        final alamatLengkap = alamatList.join(', ');
-
-        if (alamatLengkap.isNotEmpty) {
-          setState(() => alamatController.text = alamatLengkap);
-          _showSnackBar('✓ Alamat berhasil didapatkan');
-        } else {
-          // Jaga-jaga kalau semua field alamat dari satelit nilainya kosong
-          setState(
-            () => alamatController.text =
-                '${position.latitude}, ${position.longitude}',
-          );
-          _showSnackBar('Hanya koordinat angka yang didapat dari satelit');
-        }
-      } else {
-        _showSnackBar('Alamat tidak ditemukan di titik ini');
-      }
-    } catch (e) {
-      _showSnackBar('Gagal mengambil lokasi. Cek koneksi & GPS.');
-      debugPrint('Error detail GPS Utama: $e');
-    } finally {
-      if (mounted) setState(() => isLoadingAlamat = false);
     }
   }
 
@@ -214,6 +107,12 @@ class _SettingsScreenState extends State<SettingsScreen> {
         'occupation': occupationController.text.trim(),
         'alamat': alamatController.text.trim(),
       };
+
+      // Jika ada koordinat yang tersimpan, sertakan dalam update
+      if (latitude != null && longitude != null) {
+        updateData['latitude'] = latitude;
+        updateData['longitude'] = longitude;
+      }
 
       if (selectedImageBytes != null) {
         try {
