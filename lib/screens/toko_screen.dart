@@ -285,10 +285,10 @@ class _TokoScreenState extends State<TokoScreen> {
                       }
 
                       if (profileImageBytes != null &&
-                          profileImageBytes!.isNotEmpty) {
+                          profileImageBytes.isNotEmpty) {
                         return CircleAvatar(
                           radius: 28,
-                          backgroundImage: MemoryImage(profileImageBytes!),
+                          backgroundImage: MemoryImage(profileImageBytes),
                         );
                       }
 
