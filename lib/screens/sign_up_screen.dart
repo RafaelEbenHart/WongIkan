@@ -85,10 +85,43 @@ class _SignUpScreenState extends State<SignUpScreen> {
     }
   }
 
+  InputDecoration _fieldDecoration({
+    required String label,
+    required IconData icon,
+    Widget? suffixIcon,
+    required ColorScheme colorScheme,
+  }) {
+    return InputDecoration(
+      filled: true,
+      fillColor: colorScheme.surfaceVariant.withOpacity(0.5),
+      labelText: label,
+      prefixIcon: Icon(icon, color: colorScheme.onSurface.withOpacity(0.5)),
+      suffixIcon: suffixIcon,
+      enabledBorder: OutlineInputBorder(
+        borderRadius: BorderRadius.circular(16),
+        borderSide: BorderSide(color: colorScheme.outline.withOpacity(0.3)),
+      ),
+      focusedBorder: OutlineInputBorder(
+        borderRadius: BorderRadius.circular(16),
+        borderSide: BorderSide(color: colorScheme.primary),
+      ),
+      errorBorder: OutlineInputBorder(
+        borderRadius: BorderRadius.circular(16),
+        borderSide: BorderSide(color: colorScheme.error),
+      ),
+      focusedErrorBorder: OutlineInputBorder(
+        borderRadius: BorderRadius.circular(16),
+        borderSide: BorderSide(color: colorScheme.error),
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
+    final colorScheme = Theme.of(context).colorScheme;
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+
     return Scaffold(
-      backgroundColor: const Color(0xFFF4F5FA),
       body: SafeArea(
         child: Center(
           child: SingleChildScrollView(
@@ -108,19 +141,19 @@ class _SignUpScreenState extends State<SignUpScreen> {
                 Text(
                   'Buat akun baru',
                   textAlign: TextAlign.center,
-                  style: Theme.of(
-                    context,
-                  ).textTheme.bodyMedium?.copyWith(color: Colors.grey[600]),
+                  style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                    color: colorScheme.onSurface.withOpacity(0.6),
+                  ),
                 ),
                 const SizedBox(height: 32),
                 Container(
                   padding: const EdgeInsets.all(24),
                   decoration: BoxDecoration(
-                    color: Colors.white,
+                    color: colorScheme.surface,
                     borderRadius: BorderRadius.circular(24),
                     boxShadow: [
                       BoxShadow(
-                        color: Colors.black.withOpacity(0.05),
+                        color: Colors.black.withOpacity(isDark ? 0.3 : 0.05),
                         blurRadius: 20,
                         offset: const Offset(0, 10),
                       ),
@@ -132,26 +165,10 @@ class _SignUpScreenState extends State<SignUpScreen> {
                       children: [
                         TextFormField(
                           controller: _usernameController,
-                          decoration: InputDecoration(
-                            filled: true,
-                            fillColor: const Color(0xFFF8F9FC),
-                            labelText: 'Username',
-                            prefixIcon: const Icon(
-                              Icons.person,
-                              color: Colors.grey,
-                            ),
-                            enabledBorder: OutlineInputBorder(
-                              borderRadius: BorderRadius.circular(16),
-                              borderSide: BorderSide(
-                                color: Colors.grey.shade200,
-                              ),
-                            ),
-                            focusedBorder: OutlineInputBorder(
-                              borderRadius: BorderRadius.circular(16),
-                              borderSide: BorderSide(
-                                color: Theme.of(context).colorScheme.primary,
-                              ),
-                            ),
+                          decoration: _fieldDecoration(
+                            label: 'Username',
+                            icon: Icons.person,
+                            colorScheme: colorScheme,
                           ),
                           validator: (value) {
                             if (value == null || value.isEmpty) {
@@ -164,26 +181,10 @@ class _SignUpScreenState extends State<SignUpScreen> {
                         TextFormField(
                           controller: _emailController,
                           keyboardType: TextInputType.emailAddress,
-                          decoration: InputDecoration(
-                            filled: true,
-                            fillColor: const Color(0xFFF8F9FC),
-                            labelText: 'Email',
-                            prefixIcon: const Icon(
-                              Icons.email,
-                              color: Colors.grey,
-                            ),
-                            enabledBorder: OutlineInputBorder(
-                              borderRadius: BorderRadius.circular(16),
-                              borderSide: BorderSide(
-                                color: Colors.grey.shade200,
-                              ),
-                            ),
-                            focusedBorder: OutlineInputBorder(
-                              borderRadius: BorderRadius.circular(16),
-                              borderSide: BorderSide(
-                                color: Theme.of(context).colorScheme.primary,
-                              ),
-                            ),
+                          decoration: _fieldDecoration(
+                            label: 'Email',
+                            icon: Icons.email,
+                            colorScheme: colorScheme,
                           ),
                           validator: (value) {
                             if (value == null ||
@@ -198,35 +199,19 @@ class _SignUpScreenState extends State<SignUpScreen> {
                         TextFormField(
                           controller: _passwordController,
                           obscureText: !_isPasswordVisible,
-                          decoration: InputDecoration(
-                            filled: true,
-                            fillColor: const Color(0xFFF8F9FC),
-                            labelText: 'Password',
-                            prefixIcon: const Icon(
-                              Icons.lock,
-                              color: Colors.grey,
-                            ),
+                          decoration: _fieldDecoration(
+                            label: 'Password',
+                            icon: Icons.lock,
+                            colorScheme: colorScheme,
                             suffixIcon: IconButton(
                               icon: Icon(
                                 _isPasswordVisible
                                     ? Icons.visibility
                                     : Icons.visibility_off,
-                                color: Colors.grey,
+                                color: colorScheme.onSurface.withOpacity(0.5),
                               ),
                               onPressed: () => setState(
                                 () => _isPasswordVisible = !_isPasswordVisible,
-                              ),
-                            ),
-                            enabledBorder: OutlineInputBorder(
-                              borderRadius: BorderRadius.circular(16),
-                              borderSide: BorderSide(
-                                color: Colors.grey.shade200,
-                              ),
-                            ),
-                            focusedBorder: OutlineInputBorder(
-                              borderRadius: BorderRadius.circular(16),
-                              borderSide: BorderSide(
-                                color: Theme.of(context).colorScheme.primary,
                               ),
                             ),
                           ),
@@ -244,36 +229,20 @@ class _SignUpScreenState extends State<SignUpScreen> {
                         TextFormField(
                           controller: _confirmPasswordController,
                           obscureText: !_isConfirmPasswordVisible,
-                          decoration: InputDecoration(
-                            filled: true,
-                            fillColor: const Color(0xFFF8F9FC),
-                            labelText: 'Konfirmasi Password',
-                            prefixIcon: const Icon(
-                              Icons.lock,
-                              color: Colors.grey,
-                            ),
+                          decoration: _fieldDecoration(
+                            label: 'Konfirmasi Password',
+                            icon: Icons.lock,
+                            colorScheme: colorScheme,
                             suffixIcon: IconButton(
                               icon: Icon(
                                 _isConfirmPasswordVisible
                                     ? Icons.visibility
                                     : Icons.visibility_off,
-                                color: Colors.grey,
+                                color: colorScheme.onSurface.withOpacity(0.5),
                               ),
                               onPressed: () => setState(
                                 () => _isConfirmPasswordVisible =
                                     !_isConfirmPasswordVisible,
-                              ),
-                            ),
-                            enabledBorder: OutlineInputBorder(
-                              borderRadius: BorderRadius.circular(16),
-                              borderSide: BorderSide(
-                                color: Colors.grey.shade200,
-                              ),
-                            ),
-                            focusedBorder: OutlineInputBorder(
-                              borderRadius: BorderRadius.circular(16),
-                              borderSide: BorderSide(
-                                color: Theme.of(context).colorScheme.primary,
                               ),
                             ),
                           ),
@@ -291,25 +260,25 @@ class _SignUpScreenState extends State<SignUpScreen> {
                           child: ElevatedButton(
                             onPressed: _isLoading ? null : _signUp,
                             style: ElevatedButton.styleFrom(
-                              backgroundColor: const Color(0xFF5E7AC4),
+                              backgroundColor: colorScheme.primary,
+                              foregroundColor: colorScheme.onPrimary,
                               shape: RoundedRectangleBorder(
                                 borderRadius: BorderRadius.circular(16),
                               ),
                               elevation: 0,
                             ),
                             child: _isLoading
-                                ? const SizedBox(
+                                ? SizedBox(
                                     width: 20,
                                     height: 20,
                                     child: CircularProgressIndicator(
-                                      color: Colors.white,
+                                      color: colorScheme.onPrimary,
                                       strokeWidth: 2,
                                     ),
                                   )
                                 : const Text(
                                     'Daftar',
                                     style: TextStyle(
-                                      color: Colors.white,
                                       fontSize: 16,
                                       fontWeight: FontWeight.w600,
                                     ),
@@ -324,14 +293,14 @@ class _SignUpScreenState extends State<SignUpScreen> {
                 Text.rich(
                   TextSpan(
                     text: 'Sudah punya akun? ',
-                    style: Theme.of(
-                      context,
-                    ).textTheme.bodyMedium?.copyWith(color: Colors.grey[700]),
+                    style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                      color: colorScheme.onBackground.withOpacity(0.7),
+                    ),
                     children: [
                       TextSpan(
                         text: 'Masuk',
                         style: TextStyle(
-                          color: Theme.of(context).colorScheme.primary,
+                          color: colorScheme.primary,
                           fontWeight: FontWeight.bold,
                         ),
                         recognizer: TapGestureRecognizer()
