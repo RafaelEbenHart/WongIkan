@@ -43,16 +43,18 @@ class _GuestScreenState extends State<GuestScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final colorScheme = Theme.of(context).colorScheme;
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+
     return Scaffold(
-      backgroundColor: const Color(0xFFF4F6FF),
       appBar: AppBar(
         backgroundColor: Colors.transparent,
         elevation: 0,
         automaticallyImplyLeading: false,
-        title: const Text(
+        title: Text(
           'WONGIKAN',
           style: TextStyle(
-            color: Color(0xFF1A1A2E),
+            color: colorScheme.onBackground,
             fontWeight: FontWeight.w800,
             fontSize: 22,
             letterSpacing: -0.5,
@@ -69,20 +71,20 @@ class _GuestScreenState extends State<GuestScreen> {
                   vertical: 7,
                 ),
                 decoration: BoxDecoration(
-                  color: const Color(0xFF6C8EF5),
+                  color: colorScheme.primary,
                   borderRadius: BorderRadius.circular(20),
                   boxShadow: [
                     BoxShadow(
-                      color: const Color(0xFF6C8EF5).withOpacity(0.35),
+                      color: colorScheme.primary.withOpacity(0.35),
                       blurRadius: 8,
                       offset: const Offset(0, 3),
                     ),
                   ],
                 ),
-                child: const Text(
+                child: Text(
                   'Login',
                   style: TextStyle(
-                    color: Colors.white,
+                    color: colorScheme.onPrimary,
                     fontSize: 13,
                     fontWeight: FontWeight.w700,
                     letterSpacing: -0.2,
@@ -101,7 +103,6 @@ class _GuestScreenState extends State<GuestScreen> {
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               const SizedBox(height: 4),
-
               CarouselWidget(
                 images: const [
                   'assets/images/Carousel1.png',
@@ -111,18 +112,17 @@ class _GuestScreenState extends State<GuestScreen> {
                 height: 180,
               ),
               const SizedBox(height: 16),
-
               Container(
                 padding: const EdgeInsets.symmetric(
                   horizontal: 14,
                   vertical: 2,
                 ),
                 decoration: BoxDecoration(
-                  color: Colors.white,
+                  color: colorScheme.surface,
                   borderRadius: BorderRadius.circular(14),
                   boxShadow: [
                     BoxShadow(
-                      color: Colors.black.withOpacity(0.05),
+                      color: Colors.black.withOpacity(isDark ? 0.2 : 0.05),
                       blurRadius: 12,
                       offset: const Offset(0, 4),
                     ),
@@ -132,28 +132,24 @@ class _GuestScreenState extends State<GuestScreen> {
                   controller: searchController,
                   onChanged: (value) =>
                       setState(() => searchQuery = value.toLowerCase()),
-                  style: const TextStyle(
-                    fontSize: 14,
-                    color: Color(0xFF1A1A2E),
-                  ),
-                  decoration: const InputDecoration(
+                  style: TextStyle(fontSize: 14, color: colorScheme.onSurface),
+                  decoration: InputDecoration(
                     hintText: 'Cari ikan, kategori, atau lokasi...',
                     prefixIcon: Icon(
                       Icons.search_rounded,
-                      color: Color(0xFF9E9E9E),
+                      color: colorScheme.onSurface.withOpacity(0.4),
                       size: 20,
                     ),
                     border: InputBorder.none,
                     hintStyle: TextStyle(
-                      color: Color(0xFFBDBDBD),
+                      color: colorScheme.onSurface.withOpacity(0.35),
                       fontSize: 14,
                     ),
-                    contentPadding: EdgeInsets.symmetric(vertical: 14),
+                    contentPadding: const EdgeInsets.symmetric(vertical: 14),
                   ),
                 ),
               ),
               const SizedBox(height: 14),
-
               SizedBox(
                 height: 36,
                 child: ListView.separated(
@@ -174,15 +170,13 @@ class _GuestScreenState extends State<GuestScreen> {
                         ),
                         decoration: BoxDecoration(
                           color: active
-                              ? const Color(0xFF6C8EF5)
-                              : Colors.white,
+                              ? colorScheme.primary
+                              : colorScheme.surface,
                           borderRadius: BorderRadius.circular(10),
                           boxShadow: active
                               ? [
                                   BoxShadow(
-                                    color: const Color(
-                                      0xFF6C8EF5,
-                                    ).withOpacity(0.3),
+                                    color: colorScheme.primary.withOpacity(0.3),
                                     blurRadius: 8,
                                     offset: const Offset(0, 3),
                                   ),
@@ -190,16 +184,16 @@ class _GuestScreenState extends State<GuestScreen> {
                               : [],
                           border: Border.all(
                             color: active
-                                ? const Color(0xFF6C8EF5)
-                                : Colors.grey.shade200,
+                                ? colorScheme.primary
+                                : colorScheme.outline.withOpacity(0.3),
                           ),
                         ),
                         child: Text(
                           category,
                           style: TextStyle(
                             color: active
-                                ? Colors.white
-                                : const Color(0xFF6B6B80),
+                                ? colorScheme.onPrimary
+                                : colorScheme.onSurface.withOpacity(0.7),
                             fontWeight: active
                                 ? FontWeight.w700
                                 : FontWeight.w500,
@@ -212,17 +206,16 @@ class _GuestScreenState extends State<GuestScreen> {
                 ),
               ),
               const SizedBox(height: 20),
-              const Text(
+              Text(
                 'Disarankan',
                 style: TextStyle(
                   fontSize: 17,
                   fontWeight: FontWeight.w700,
-                  color: Color(0xFF1A1A2E),
+                  color: colorScheme.onBackground,
                   letterSpacing: -0.3,
                 ),
               ),
               const SizedBox(height: 12),
-
               StreamBuilder<QuerySnapshot>(
                 stream: FirebaseFirestore.instance
                     .collection('ikan')
@@ -242,11 +235,11 @@ class _GuestScreenState extends State<GuestScreen> {
                   }
 
                   if (snapshot.connectionState == ConnectionState.waiting) {
-                    return const Center(
+                    return Center(
                       child: Padding(
-                        padding: EdgeInsets.all(40),
+                        padding: const EdgeInsets.all(40),
                         child: CircularProgressIndicator(
-                          color: Color(0xFF6C8EF5),
+                          color: colorScheme.primary,
                         ),
                       ),
                     );
@@ -255,12 +248,14 @@ class _GuestScreenState extends State<GuestScreen> {
                   final allData = snapshot.data?.docs ?? [];
 
                   if (allData.isEmpty) {
-                    return const Center(
+                    return Center(
                       child: Padding(
-                        padding: EdgeInsets.all(40),
+                        padding: const EdgeInsets.all(40),
                         child: Text(
                           'Belum ada data ikan',
-                          style: TextStyle(color: Colors.grey),
+                          style: TextStyle(
+                            color: colorScheme.onBackground.withOpacity(0.5),
+                          ),
                         ),
                       ),
                     );
@@ -285,12 +280,14 @@ class _GuestScreenState extends State<GuestScreen> {
                   }).toList();
 
                   if (filteredData.isEmpty) {
-                    return const Center(
+                    return Center(
                       child: Padding(
-                        padding: EdgeInsets.all(40),
+                        padding: const EdgeInsets.all(40),
                         child: Text(
                           'Tidak ditemukan ikan yang cocok',
-                          style: TextStyle(color: Colors.grey),
+                          style: TextStyle(
+                            color: colorScheme.onBackground.withOpacity(0.5),
+                          ),
                         ),
                       ),
                     );
@@ -312,7 +309,6 @@ class _GuestScreenState extends State<GuestScreen> {
                   );
                 },
               ),
-
               const SizedBox(height: 80),
             ],
           ),
@@ -328,15 +324,18 @@ class _GuestFishCard extends StatelessWidget {
 
   const _GuestFishCard({required this.doc, required this.ikan});
 
-  Widget _placeholder() => Container(
-    color: const Color(0xFFEEF3FF),
-    child: const Center(
-      child: Icon(Icons.set_meal_rounded, size: 38, color: Color(0xFF6C8EF5)),
+  Widget _placeholder(ColorScheme colorScheme) => Container(
+    color: colorScheme.primaryContainer.withOpacity(0.3),
+    child: Center(
+      child: Icon(Icons.set_meal_rounded, size: 38, color: colorScheme.primary),
     ),
   );
 
   @override
   Widget build(BuildContext context) {
+    final colorScheme = Theme.of(context).colorScheme;
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+
     final lokasiText = ikan['lokasi']?.toString() ?? '-';
     final harga = ikan['harga']?.toString() ?? '0';
     final nama = ikan['nama']?.toString() ?? 'Tanpa Nama';
@@ -349,12 +348,13 @@ class _GuestFishCard extends StatelessWidget {
       ),
       child: Container(
         decoration: BoxDecoration(
-          color: Colors.white,
+          color: colorScheme.surface,
           borderRadius: BorderRadius.circular(14),
-          // Shadow identik dengan _FishCard di more.dart
           boxShadow: [
             BoxShadow(
-              color: const Color(0xFF6C8EF5).withOpacity(0.10),
+              color: isDark
+                  ? Colors.black.withOpacity(0.3)
+                  : colorScheme.primary.withOpacity(0.10),
               blurRadius: 14,
               offset: const Offset(0, 4),
             ),
@@ -376,12 +376,11 @@ class _GuestFishCard extends StatelessWidget {
                     ? Image.memory(
                         base64Decode(gambarString),
                         fit: BoxFit.cover,
-                        errorBuilder: (_, __, ___) => _placeholder(),
+                        errorBuilder: (_, __, ___) => _placeholder(colorScheme),
                       )
-                    : _placeholder(),
+                    : _placeholder(colorScheme),
               ),
             ),
-
             Padding(
               padding: const EdgeInsets.fromLTRB(10, 8, 10, 10),
               child: Column(
@@ -391,20 +390,20 @@ class _GuestFishCard extends StatelessWidget {
                     nama,
                     maxLines: 1,
                     overflow: TextOverflow.ellipsis,
-                    style: const TextStyle(
+                    style: TextStyle(
                       fontSize: 13,
                       fontWeight: FontWeight.w700,
-                      color: Color(0xFF1A1A2E),
+                      color: colorScheme.onSurface,
                       letterSpacing: -0.2,
                     ),
                   ),
                   const SizedBox(height: 4),
                   Row(
                     children: [
-                      const Icon(
+                      Icon(
                         Icons.location_on_rounded,
                         size: 11,
-                        color: Color(0xFF9E9E9E),
+                        color: colorScheme.onSurface.withOpacity(0.45),
                       ),
                       const SizedBox(width: 3),
                       Expanded(
@@ -412,9 +411,9 @@ class _GuestFishCard extends StatelessWidget {
                           lokasiText,
                           maxLines: 1,
                           overflow: TextOverflow.ellipsis,
-                          style: const TextStyle(
+                          style: TextStyle(
                             fontSize: 10,
-                            color: Color(0xFF9E9E9E),
+                            color: colorScheme.onSurface.withOpacity(0.45),
                           ),
                         ),
                       ),
@@ -423,8 +422,8 @@ class _GuestFishCard extends StatelessWidget {
                   const SizedBox(height: 6),
                   Text(
                     'Rp $harga',
-                    style: const TextStyle(
-                      color: Color(0xFF6C8EF5),
+                    style: TextStyle(
+                      color: colorScheme.primary,
                       fontWeight: FontWeight.w800,
                       fontSize: 12,
                       letterSpacing: -0.2,

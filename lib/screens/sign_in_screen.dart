@@ -6,6 +6,7 @@ import 'package:wongiwak/screens/sign_up_screen.dart';
 
 class SignInScreen extends StatefulWidget {
   const SignInScreen({super.key});
+
   @override
   SignInScreenState createState() => SignInScreenState();
 }
@@ -18,9 +19,7 @@ class SignInScreenState extends State<SignInScreen> {
   bool _isPasswordVisible = false;
 
   void _signIn() async {
-    if (!_formKey.currentState!.validate()) {
-      return;
-    }
+    if (!_formKey.currentState!.validate()) return;
     final email = _emailController.text.trim();
     final password = _passwordController.text;
     setState(() => _isLoading = true);
@@ -35,7 +34,7 @@ class SignInScreenState extends State<SignInScreen> {
     } on FirebaseAuthException catch (error) {
       _showSnackBar(_getAuthErrorMessage(error.code));
     } catch (error) {
-      _showSnackBar('An error occurred: $error');
+      _showSnackBar('Terjadi kesalahan: $error');
     } finally {
       setState(() => _isLoading = false);
     }
@@ -48,38 +47,37 @@ class SignInScreenState extends State<SignInScreen> {
   }
 
   bool _isValidEmail(String email) {
-    String emailRegex =
-        r"^[a-zA-Z0-9.!#$%&'*+/=?^_`{|}~-]+@[a-zA-Z0-9-]+(?:\.[a-zAZ0-9-]+)*$";
-    return RegExp(emailRegex).hasMatch(email);
+    return RegExp(
+      r"^[a-zA-Z0-9.!#$%&'*+/=?^_`{|}~-]+@[a-zA-Z0-9-]+(?:\.[a-zA-Z0-9-]+)*$",
+    ).hasMatch(email);
   }
 
   String _getAuthErrorMessage(String code) {
     switch (code) {
       case 'user-not-found':
-        return 'No user found with that email';
+        return 'Email tidak ditemukan';
       case 'wrong-password':
-        return 'Wrong password. Please try again.';
+        return 'Password salah';
       default:
-        return 'An error occurred. Please try again.';
+        return 'Terjadi kesalahan, coba lagi';
     }
   }
 
   @override
   Widget build(BuildContext context) {
+    final colorScheme = Theme.of(context).colorScheme;
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+
     return Scaffold(
-      backgroundColor: const Color(0xFFF4F5FA),
       body: SafeArea(
         child: Center(
           child: SingleChildScrollView(
-            padding: const EdgeInsets.symmetric(
-              horizontal: 24.0,
-              vertical: 32.0,
-            ),
+            padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 32),
             child: Column(
               mainAxisSize: MainAxisSize.min,
               crossAxisAlignment: CrossAxisAlignment.stretch,
               children: [
-                const SizedBox(height: 24.0),
+                const SizedBox(height: 24),
                 Text(
                   'Masuk',
                   textAlign: TextAlign.center,
@@ -87,28 +85,28 @@ class SignInScreenState extends State<SignInScreen> {
                     fontWeight: FontWeight.bold,
                   ),
                 ),
-                const SizedBox(height: 8.0),
+                const SizedBox(height: 8),
                 Text(
                   'Masuk ke akun Anda',
                   textAlign: TextAlign.center,
-                  style: Theme.of(
-                    context,
-                  ).textTheme.bodyMedium?.copyWith(color: Colors.grey[600]),
+                  style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                    color: colorScheme.onSurface.withOpacity(0.6),
+                  ),
                 ),
-                const SizedBox(height: 32.0),
+                const SizedBox(height: 32),
                 Container(
                   decoration: BoxDecoration(
-                    color: Colors.white,
-                    borderRadius: BorderRadius.circular(24.0),
+                    color: colorScheme.surface,
+                    borderRadius: BorderRadius.circular(24),
                     boxShadow: [
                       BoxShadow(
-                        color: Colors.black.withOpacity(0.05),
+                        color: Colors.black.withOpacity(isDark ? 0.3 : 0.05),
                         blurRadius: 20,
                         offset: const Offset(0, 10),
                       ),
                     ],
                   ),
-                  padding: const EdgeInsets.all(24.0),
+                  padding: const EdgeInsets.all(24),
                   child: Form(
                     key: _formKey,
                     child: Column(
@@ -118,98 +116,117 @@ class SignInScreenState extends State<SignInScreen> {
                           keyboardType: TextInputType.emailAddress,
                           decoration: InputDecoration(
                             filled: true,
-                            fillColor: const Color(0xFFF8F9FC),
+                            fillColor: colorScheme.surfaceVariant.withOpacity(
+                              0.5,
+                            ),
                             labelText: 'Email',
-                            prefixIcon: const Icon(
+                            prefixIcon: Icon(
                               Icons.email,
-                              color: Colors.grey,
+                              color: colorScheme.onSurface.withOpacity(0.5),
                             ),
                             enabledBorder: OutlineInputBorder(
-                              borderRadius: BorderRadius.circular(16.0),
+                              borderRadius: BorderRadius.circular(16),
                               borderSide: BorderSide(
-                                color: Colors.grey.shade200,
+                                color: colorScheme.outline.withOpacity(0.3),
                               ),
                             ),
                             focusedBorder: OutlineInputBorder(
-                              borderRadius: BorderRadius.circular(16.0),
+                              borderRadius: BorderRadius.circular(16),
                               borderSide: BorderSide(
-                                color: Theme.of(context).colorScheme.primary,
+                                color: colorScheme.primary,
                               ),
+                            ),
+                            errorBorder: OutlineInputBorder(
+                              borderRadius: BorderRadius.circular(16),
+                              borderSide: BorderSide(color: colorScheme.error),
+                            ),
+                            focusedErrorBorder: OutlineInputBorder(
+                              borderRadius: BorderRadius.circular(16),
+                              borderSide: BorderSide(color: colorScheme.error),
                             ),
                           ),
                           validator: (value) {
                             if (value == null ||
                                 value.isEmpty ||
                                 !_isValidEmail(value)) {
-                              return 'Please enter a valid email';
+                              return 'Masukkan email yang valid';
                             }
                             return null;
                           },
                         ),
-                        const SizedBox(height: 16.0),
+                        const SizedBox(height: 16),
                         TextFormField(
                           controller: _passwordController,
                           obscureText: !_isPasswordVisible,
                           decoration: InputDecoration(
                             filled: true,
-                            fillColor: const Color(0xFFF8F9FC),
+                            fillColor: colorScheme.surfaceVariant.withOpacity(
+                              0.5,
+                            ),
                             labelText: 'Password',
-                            prefixIcon: const Icon(
+                            prefixIcon: Icon(
                               Icons.lock,
-                              color: Colors.grey,
+                              color: colorScheme.onSurface.withOpacity(0.5),
                             ),
                             suffixIcon: IconButton(
                               icon: Icon(
                                 _isPasswordVisible
                                     ? Icons.visibility
                                     : Icons.visibility_off,
-                                color: Colors.grey,
+                                color: colorScheme.onSurface.withOpacity(0.5),
                               ),
-                              onPressed: () {
-                                setState(() {
-                                  _isPasswordVisible = !_isPasswordVisible;
-                                });
-                              },
+                              onPressed: () => setState(
+                                () => _isPasswordVisible = !_isPasswordVisible,
+                              ),
                             ),
                             enabledBorder: OutlineInputBorder(
-                              borderRadius: BorderRadius.circular(16.0),
+                              borderRadius: BorderRadius.circular(16),
                               borderSide: BorderSide(
-                                color: Colors.grey.shade200,
+                                color: colorScheme.outline.withOpacity(0.3),
                               ),
                             ),
                             focusedBorder: OutlineInputBorder(
-                              borderRadius: BorderRadius.circular(16.0),
+                              borderRadius: BorderRadius.circular(16),
                               borderSide: BorderSide(
-                                color: Theme.of(context).colorScheme.primary,
+                                color: colorScheme.primary,
                               ),
+                            ),
+                            errorBorder: OutlineInputBorder(
+                              borderRadius: BorderRadius.circular(16),
+                              borderSide: BorderSide(color: colorScheme.error),
+                            ),
+                            focusedErrorBorder: OutlineInputBorder(
+                              borderRadius: BorderRadius.circular(16),
+                              borderSide: BorderSide(color: colorScheme.error),
                             ),
                           ),
                           validator: (value) {
                             if (value == null || value.isEmpty) {
-                              return 'Please enter your password';
+                              return 'Masukkan password';
                             }
                             return null;
                           },
                         ),
-                        const SizedBox(height: 28.0),
+                        const SizedBox(height: 28),
                         SizedBox(
                           width: double.infinity,
                           height: 54,
                           child: ElevatedButton(
                             onPressed: _isLoading ? null : _signIn,
                             style: ElevatedButton.styleFrom(
-                              backgroundColor: const Color(0xFF5E7AC4),
+                              backgroundColor: colorScheme.primary,
+                              foregroundColor: colorScheme.onPrimary,
                               shape: RoundedRectangleBorder(
-                                borderRadius: BorderRadius.circular(16.0),
+                                borderRadius: BorderRadius.circular(16),
                               ),
                               elevation: 0,
                             ),
                             child: _isLoading
-                                ? const SizedBox(
+                                ? SizedBox(
                                     height: 20,
                                     width: 20,
                                     child: CircularProgressIndicator(
-                                      color: Colors.white,
+                                      color: colorScheme.onPrimary,
                                       strokeWidth: 2,
                                     ),
                                   )
@@ -218,7 +235,6 @@ class SignInScreenState extends State<SignInScreen> {
                                     style: TextStyle(
                                       fontSize: 16,
                                       fontWeight: FontWeight.w600,
-                                      color: Colors.white,
                                     ),
                                   ),
                           ),
@@ -227,18 +243,18 @@ class SignInScreenState extends State<SignInScreen> {
                     ),
                   ),
                 ),
-                const SizedBox(height: 20.0),
+                const SizedBox(height: 20),
                 Text.rich(
                   TextSpan(
                     text: 'Belum punya akun? ',
-                    style: Theme.of(
-                      context,
-                    ).textTheme.bodyMedium?.copyWith(color: Colors.grey[700]),
+                    style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                      color: colorScheme.onBackground.withOpacity(0.7),
+                    ),
                     children: [
                       TextSpan(
                         text: 'Daftar',
                         style: TextStyle(
-                          color: Theme.of(context).colorScheme.primary,
+                          color: colorScheme.primary,
                           fontWeight: FontWeight.bold,
                         ),
                         recognizer: TapGestureRecognizer()
