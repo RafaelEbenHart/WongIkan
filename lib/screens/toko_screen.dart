@@ -1,4 +1,5 @@
 import 'dart:convert';
+import 'dart:typed_data';
 
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
@@ -221,23 +222,26 @@ class _TokoScreenState extends State<TokoScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
     return Scaffold(
-      backgroundColor: const Color(0xffF5F5F5),
+      backgroundColor: isDark
+          ? const Color(0xFF121212)
+          : const Color(0xffF5F5F5),
       appBar: AppBar(
-        backgroundColor: Colors.white,
+        backgroundColor: isDark ? const Color(0xFF1E1E1E) : Colors.white,
         elevation: 0,
         leading: IconButton(
-          icon: const Icon(
+          icon: Icon(
             Icons.arrow_back_ios_new,
-            color: Colors.black,
+            color: isDark ? Colors.white : Colors.black,
             size: 18,
           ),
           onPressed: () => Navigator.pop(context),
         ),
-        title: const Text(
-          "Toko",
+        title: Text(
+          "Info Penjual",
           style: TextStyle(
-            color: Colors.black,
+            color: isDark ? Colors.white : Colors.black,
             fontSize: 18,
             fontWeight: FontWeight.bold,
           ),
@@ -251,19 +255,55 @@ class _TokoScreenState extends State<TokoScreen> {
               margin: const EdgeInsets.all(16),
               padding: const EdgeInsets.all(16),
               decoration: BoxDecoration(
-                color: Colors.white,
+                color: isDark ? const Color(0xFF1E1E1E) : Colors.white,
                 borderRadius: BorderRadius.circular(20),
               ),
               child: Row(
                 children: [
-                  CircleAvatar(
-                    radius: 28,
-                    backgroundColor: Colors.blue.shade100,
-                    child: const Icon(
-                      Icons.person,
-                      color: Colors.blue,
-                      size: 28,
-                    ),
+                  StreamBuilder<DocumentSnapshot>(
+                    stream: firestore
+                        .collection('users')
+                        .doc(widget.userId)
+                        .snapshots(),
+                    builder: (context, userSnapshot) {
+                      Uint8List? profileImageBytes;
+                      if (userSnapshot.hasData && userSnapshot.data!.exists) {
+                        try {
+                          final userData =
+                              userSnapshot.data!.data() as Map<String, dynamic>;
+                          if (userData['profileImageBytes'] != null) {
+                            // Handle Firestore Blob type
+                            final imageData = userData['profileImageBytes'];
+                            if (imageData is Blob) {
+                              profileImageBytes = imageData.bytes;
+                            } else if (imageData is String) {
+                              profileImageBytes = base64Decode(imageData);
+                            }
+                          }
+                        } catch (e) {
+                          debugPrint('Error decoding profile image: $e');
+                          profileImageBytes = null;
+                        }
+                      }
+
+                      if (profileImageBytes != null &&
+                          profileImageBytes.isNotEmpty) {
+                        return CircleAvatar(
+                          radius: 28,
+                          backgroundImage: MemoryImage(profileImageBytes),
+                        );
+                      }
+
+                      return CircleAvatar(
+                        radius: 28,
+                        backgroundColor: Colors.blue.shade100,
+                        child: const Icon(
+                          Icons.person,
+                          color: Colors.blue,
+                          size: 28,
+                        ),
+                      );
+                    },
                   ),
                   const SizedBox(width: 14),
                   Expanded(
@@ -272,9 +312,10 @@ class _TokoScreenState extends State<TokoScreen> {
                       children: [
                         Text(
                           widget.username,
-                          style: const TextStyle(
+                          style: TextStyle(
                             fontWeight: FontWeight.bold,
                             fontSize: 16,
+                            color: isDark ? Colors.white : Colors.black,
                           ),
                           maxLines: 1,
                           overflow: TextOverflow.ellipsis,
@@ -291,8 +332,10 @@ class _TokoScreenState extends State<TokoScreen> {
                             Expanded(
                               child: Text(
                                 widget.alamat,
-                                style: const TextStyle(
-                                  color: Colors.black54,
+                                style: TextStyle(
+                                  color: isDark
+                                      ? Colors.white70
+                                      : Colors.black54,
                                   fontSize: 12,
                                 ),
                                 maxLines: 1,
@@ -385,33 +428,44 @@ class _TokoScreenState extends State<TokoScreen> {
                               onTap: () {
                                 setState(() => selectedCategory = category);
                               },
-                              child: Container(
-                                padding: const EdgeInsets.symmetric(
-                                  horizontal: 16,
-                                  vertical: 10,
-                                ),
-                                decoration: BoxDecoration(
-                                  color: active
-                                      ? const Color(0xFF6C8EF5)
-                                      : Colors.white,
-                                  borderRadius: BorderRadius.circular(20),
-                                  border: Border.all(
-                                    color: active
-                                        ? const Color(0xFF6C8EF5)
-                                        : Colors.grey.shade300,
-                                  ),
-                                ),
-                                child: Text(
-                                  category,
-                                  style: TextStyle(
-                                    color: active
-                                        ? Colors.white
-                                        : Colors.black87,
-                                    fontWeight: active
-                                        ? FontWeight.bold
-                                        : FontWeight.w500,
-                                  ),
-                                ),
+                              child: Builder(
+                                builder: (ctx) {
+                                  final darkBg = isDark
+                                      ? const Color(0xFF1E1E1E)
+                                      : Colors.white;
+                                  return Container(
+                                    padding: const EdgeInsets.symmetric(
+                                      horizontal: 16,
+                                      vertical: 10,
+                                    ),
+                                    decoration: BoxDecoration(
+                                      color: active
+                                          ? const Color(0xFF6C8EF5)
+                                          : darkBg,
+                                      borderRadius: BorderRadius.circular(20),
+                                      border: Border.all(
+                                        color: active
+                                            ? const Color(0xFF6C8EF5)
+                                            : isDark
+                                            ? Colors.grey.shade700
+                                            : Colors.grey.shade300,
+                                      ),
+                                    ),
+                                    child: Text(
+                                      category,
+                                      style: TextStyle(
+                                        color: active
+                                            ? Colors.white
+                                            : isDark
+                                            ? Colors.white
+                                            : Colors.black87,
+                                        fontWeight: active
+                                            ? FontWeight.bold
+                                            : FontWeight.w500,
+                                      ),
+                                    ),
+                                  );
+                                },
                               ),
                             );
                           },
@@ -422,11 +476,12 @@ class _TokoScreenState extends State<TokoScreen> {
                         padding: const EdgeInsets.symmetric(horizontal: 16),
                         child: Row(
                           children: [
-                            const Text(
+                            Text(
                               "Semua Produk",
                               style: TextStyle(
                                 fontWeight: FontWeight.bold,
                                 fontSize: 16,
+                                color: isDark ? Colors.white : Colors.black,
                               ),
                             ),
                             const SizedBox(width: 8),
@@ -463,13 +518,17 @@ class _TokoScreenState extends State<TokoScreen> {
                                     Icon(
                                       Icons.storefront_outlined,
                                       size: 64,
-                                      color: Colors.grey.shade300,
+                                      color: isDark
+                                          ? Colors.grey.shade600
+                                          : Colors.grey.shade300,
                                     ),
                                     const SizedBox(height: 12),
-                                    const Text(
+                                    Text(
                                       "Belum ada produk",
                                       style: TextStyle(
-                                        color: Colors.black45,
+                                        color: isDark
+                                            ? Colors.grey.shade400
+                                            : Colors.black45,
                                         fontSize: 15,
                                       ),
                                     ),
@@ -511,12 +570,14 @@ class _TokoScreenState extends State<TokoScreen> {
                                     },
                                     child: Container(
                                       decoration: BoxDecoration(
-                                        color: Colors.white,
+                                        color: isDark
+                                            ? const Color(0xFF1E1E1E)
+                                            : Colors.white,
                                         borderRadius: BorderRadius.circular(16),
                                         boxShadow: [
                                           BoxShadow(
                                             color: Colors.grey.withOpacity(
-                                              0.05,
+                                              isDark ? 0.15 : 0.05,
                                             ),
                                             blurRadius: 10,
                                             offset: const Offset(0, 4),
@@ -531,7 +592,9 @@ class _TokoScreenState extends State<TokoScreen> {
                                           Expanded(
                                             child: Container(
                                               width: double.infinity,
-                                              color: Colors.blue.shade50,
+                                              color: isDark
+                                                  ? const Color(0xFF2A2A3E)
+                                                  : Colors.blue.shade50,
                                               child:
                                                   gambar.toString().isNotEmpty
                                                   ? Image.memory(
@@ -541,8 +604,11 @@ class _TokoScreenState extends State<TokoScreen> {
                                                   : Icon(
                                                       Icons.image,
                                                       size: 40,
-                                                      color:
-                                                          Colors.blue.shade200,
+                                                      color: isDark
+                                                          ? Colors.grey.shade600
+                                                          : Colors
+                                                                .blue
+                                                                .shade200,
                                                     ),
                                             ),
                                           ),
@@ -554,9 +620,12 @@ class _TokoScreenState extends State<TokoScreen> {
                                               children: [
                                                 Text(
                                                   nama,
-                                                  style: const TextStyle(
+                                                  style: TextStyle(
                                                     fontWeight: FontWeight.bold,
                                                     fontSize: 14,
+                                                    color: isDark
+                                                        ? Colors.white
+                                                        : Colors.black,
                                                   ),
                                                   maxLines: 1,
                                                   overflow:

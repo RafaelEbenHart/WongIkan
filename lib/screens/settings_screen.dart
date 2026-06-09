@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
@@ -5,6 +6,8 @@ import 'package:geolocator/geolocator.dart';
 import 'package:geocoding/geocoding.dart';
 import 'package:image_picker/image_picker.dart';
 import 'dart:typed_data';
+import 'package:wongiwak/main.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
 class SettingsScreen extends StatefulWidget {
   const SettingsScreen({super.key});
@@ -20,13 +23,15 @@ class _SettingsScreenState extends State<SettingsScreen> {
   late TextEditingController occupationController;
   late TextEditingController alamatController;
 
-  double? latitude;
-  double? longitude;
-  bool isLoadingAlamat = false;
-
   XFile? selectedImage;
   Uint8List? selectedImageBytes;
   bool isUploading = false;
+  bool isLoadingAlamat = false;
+  double? latitude;
+  double? longitude;
+  bool isRealTimeLocationActive = false;
+  bool isDarkMode = false;
+  StreamSubscription? _locationStream;
 
   @override
   void initState() {
@@ -36,11 +41,19 @@ class _SettingsScreenState extends State<SettingsScreen> {
     locationController = TextEditingController();
     occupationController = TextEditingController();
     alamatController = TextEditingController();
+    _loadDarkModePreference();
     _loadUserData();
+  }
+
+  void _loadDarkModePreference() async {
+    final prefs = await SharedPreferences.getInstance();
+    final isDark = prefs.getBool('isDarkMode') ?? false;
+    setState(() => isDarkMode = isDark);
   }
 
   @override
   void dispose() {
+    _stopLocationStream();
     usernameController.dispose();
     locationController.dispose();
     occupationController.dispose();
@@ -57,88 +70,243 @@ class _SettingsScreenState extends State<SettingsScreen> {
             .get();
 
         if (doc.exists) {
-          final data = doc.data() as Map<String, dynamic>;
-          Uint8List? loadedImage;
-          final imgField = data['profileImageBytes'];
-          if (imgField != null) {
-            if (imgField is Blob) {
-              loadedImage = imgField.bytes;
-            } else if (imgField is Uint8List) {
-              loadedImage = imgField;
-            } else if (imgField is List) {
-              loadedImage = Uint8List.fromList(List<int>.from(imgField));
-            }
+          final data = doc.data();
+
+          if (mounted) {
+            setState(() {
+              usernameController.text = data?['username'] ?? '';
+              locationController.text = data?['location'] ?? '';
+              occupationController.text =
+                  data?['occupation'] ?? 'Penjual ikan segar';
+              alamatController.text = data?['alamat'] ?? '';
+              latitude = data?['latitude'] as double?;
+              longitude = data?['longitude'] as double?;
+              isRealTimeLocationActive = data?['isRealTimeLocation'] ?? false;
+            });
           }
 
-          setState(() {
-            usernameController.text = data['username'] ?? '';
-            locationController.text = data['location'] ?? '';
-            occupationController.text =
-                data['occupation'] ?? 'Penjual ikan segar';
-            alamatController.text = data['alamat'] ?? '';
-            if (data['latitude'] != null) {
-              latitude = (data['latitude'] is num)
-                  ? (data['latitude'] as num).toDouble()
-                  : null;
-            }
-            if (data['longitude'] != null) {
-              longitude = (data['longitude'] is num)
-                  ? (data['longitude'] as num).toDouble()
-                  : null;
-            }
-            if (loadedImage != null) {
-              selectedImageBytes = loadedImage;
-            }
-          });
+          // Jika sebelumnya aktif, langsung nyalakan stream lagi
+          if (isRealTimeLocationActive) {
+            _startLocationStream();
+          }
         }
       } catch (e) {
-        // ignore: avoid_print
-        print('Error loading user data: $e');
+        debugPrint('Error loading user data: $e');
       }
     }
   }
 
-  Future<void> _ambilAlamatDariGPS() async {
-    if (isLoadingAlamat) return;
-    setState(() => isLoadingAlamat = true);
+  void _stopLocationStream() {
+    _locationStream?.cancel();
+    _locationStream = null;
+  }
+
+  Future<void> _startLocationStream() async {
     try {
+      // Cek & minta izin dulu
       LocationPermission permission = await Geolocator.checkPermission();
       if (permission == LocationPermission.denied) {
         permission = await Geolocator.requestPermission();
+        if (permission == LocationPermission.denied) {
+          _showSnackBar('Izin lokasi ditolak');
+          setState(() => isRealTimeLocationActive = false);
+          return;
+        }
       }
-      if (permission == LocationPermission.denied ||
-          permission == LocationPermission.deniedForever) {
-        _showSnackBar('Izin lokasi ditolak. Aktifkan izin lokasi.');
+
+      if (permission == LocationPermission.deniedForever) {
+        _showSnackBar('Izin lokasi ditolak permanen. Cek pengaturan aplikasi');
+        setState(() => isRealTimeLocationActive = false);
         return;
       }
 
-      final pos = await Geolocator.getCurrentPosition(
-        desiredAccuracy: LocationAccuracy.best,
-      );
-      latitude = pos.latitude;
-      longitude = pos.longitude;
+      // Mulai stream — update setiap pindah 200 meter
+      _locationStream =
+          Geolocator.getPositionStream(
+            locationSettings: const LocationSettings(
+              accuracy: LocationAccuracy.medium,
+              distanceFilter: 200,
+            ),
+          ).listen((Position position) async {
+            try {
+              // Konversi koordinat → nama kota
+              final placemarks = await placemarkFromCoordinates(
+                position.latitude,
+                position.longitude,
+              );
 
-      final placemarks = await placemarkFromCoordinates(latitude!, longitude!);
-      if (placemarks.isNotEmpty) {
-        final p = placemarks.first;
-        final address = [
-          p.street,
-          p.subLocality,
-          p.locality,
-          p.subAdministrativeArea,
-          p.administrativeArea,
-          p.postalCode,
-          p.country,
-        ].where((s) => s != null && s.isNotEmpty).join(', ');
-        setState(() {
-          alamatController.text = address;
-          if (p.locality != null && p.locality!.isNotEmpty) {
-            locationController.text = p.locality!;
-          }
-        });
+              if (placemarks.isNotEmpty) {
+                final place = placemarks.first;
+                final kota = place.locality ?? '';
+                final provinsi = place.administrativeArea ?? '';
+                final lokasiSingkat = kota.isNotEmpty || provinsi.isNotEmpty
+                    ? '$kota, $provinsi'.replaceAll(RegExp(', \$'), '').trim()
+                    : '';
+
+                if (lokasiSingkat.isNotEmpty && currentUser != null) {
+                  // Update field "location" di Firestore (BUKAN "alamat")
+                  await FirebaseFirestore.instance
+                      .collection('users')
+                      .doc(currentUser!.uid)
+                      .update({'location': lokasiSingkat});
+
+                  if (mounted) {
+                    setState(() => locationController.text = lokasiSingkat);
+                  }
+                }
+              }
+            } catch (e) {
+              debugPrint('Error di location stream: $e');
+            }
+          });
+    } catch (e) {
+      _showSnackBar('Gagal memulai lacak lokasi real-time');
+      debugPrint('Error start location stream: $e');
+      setState(() => isRealTimeLocationActive = false);
+    }
+  }
+
+  Future<void> _toggleRealTimeLocation(bool value) async {
+    setState(() => isRealTimeLocationActive = value);
+
+    if (currentUser == null) {
+      _showSnackBar('User tidak login');
+      return;
+    }
+
+    try {
+      // Simpan status toggle ke Firestore
+      await FirebaseFirestore.instance
+          .collection('users')
+          .doc(currentUser!.uid)
+          .update({'isRealTimeLocation': value});
+
+      if (value) {
+        await _startLocationStream();
+        _showSnackBar('Lacak lokasi real-time diaktifkan');
+      } else {
+        _stopLocationStream();
+        _showSnackBar('Lacak lokasi real-time dimatikan');
       }
     } catch (e) {
-      _showSnackBar('Gagal mengambil lokasi: $e');
+      _showSnackBar('Error mengubah pengaturan: $e');
+      setState(() => isRealTimeLocationActive = !value);
+    }
+  }
+
+  Future<void> _ambilAlamatDariGPS() async {
+    setState(() => isLoadingAlamat = true);
+
+    try {
+      // 1. Cek Service & Permission GPS
+      bool serviceEnabled = await Geolocator.isLocationServiceEnabled();
+      if (!serviceEnabled) {
+        _showSnackBar(
+          'Layanan lokasi (GPS) tidak aktif. Silakan nyalakan dulu.',
+        );
+        return;
+      }
+
+      LocationPermission permission = await Geolocator.checkPermission();
+      if (permission == LocationPermission.denied) {
+        permission = await Geolocator.requestPermission();
+        if (permission == LocationPermission.denied) {
+          _showSnackBar('Izin lokasi ditolak');
+          return;
+        }
+      }
+
+      if (permission == LocationPermission.deniedForever) {
+        _showSnackBar('Izin lokasi ditolak permanen. Cek pengaturan aplikasi');
+        return;
+      }
+
+      // 2. Ambil Titik Koordinat
+      final position = await Geolocator.getCurrentPosition(
+        locationSettings: const LocationSettings(
+          accuracy: LocationAccuracy.high,
+        ),
+      );
+
+      // Simpan koordinat ke variabel lokal
+      latitude = position.latitude;
+      longitude = position.longitude;
+
+      // Simpan koordinat ke Firebase segera
+      if (currentUser != null) {
+        try {
+          await FirebaseFirestore.instance
+              .collection('users')
+              .doc(currentUser!.uid)
+              .update({'latitude': latitude, 'longitude': longitude});
+        } catch (e) {
+          debugPrint('Error menyimpan koordinat ke Firebase: $e');
+        }
+      }
+
+      // 3. Terjemahkan Koordinat Menjadi Alamat (Bagian Rawan Null)
+      List<Placemark> placemarks = [];
+      try {
+        placemarks = await placemarkFromCoordinates(
+          position.latitude,
+          position.longitude,
+        );
+      } catch (geocodingError) {
+        // Jika geocoding bawaan HP/Emulator gagal, kita tangkap disini agar tidak crash
+        debugPrint('Geocoding error: $geocodingError');
+        _showSnackBar(
+          'Koordinat didapat, tapi gagal menerjemahkan nama jalan.',
+        );
+        return;
+      }
+
+      // 4. Susun Alamat dengan Sangat Aman
+      if (placemarks.isNotEmpty) {
+        final place = placemarks.first;
+        final List<String> alamatList = [];
+
+        // Cek satu-satu dengan pasti kalau datanya tidak null dan tidak kosong
+        if (place.street != null && place.street!.trim().isNotEmpty) {
+          alamatList.add(place.street!.trim());
+        }
+        if (place.subLocality != null && place.subLocality!.trim().isNotEmpty) {
+          alamatList.add(place.subLocality!.trim());
+        }
+        if (place.locality != null && place.locality!.trim().isNotEmpty) {
+          alamatList.add(place.locality!.trim());
+        }
+        if (place.subAdministrativeArea != null &&
+            place.subAdministrativeArea!.trim().isNotEmpty) {
+          alamatList.add(place.subAdministrativeArea!.trim());
+        }
+        if (place.administrativeArea != null &&
+            place.administrativeArea!.trim().isNotEmpty) {
+          alamatList.add(place.administrativeArea!.trim());
+        }
+
+        final alamatLengkap = alamatList.join(', ');
+
+        if (alamatLengkap.isNotEmpty) {
+          setState(() => alamatController.text = alamatLengkap);
+          _showSnackBar(
+            'Alamat & Koordinat (${latitude?.toStringAsFixed(4)}, ${longitude?.toStringAsFixed(4)}) berhasil disimpan',
+          );
+        } else {
+          // Jaga-jaga kalau semua field alamat dari satelit nilainya kosong
+          setState(
+            () => alamatController.text =
+                '${position.latitude}, ${position.longitude}',
+          );
+          _showSnackBar(
+            'Hanya koordinat (${latitude?.toStringAsFixed(4)}, ${longitude?.toStringAsFixed(4)}) yang disimpan',
+          );
+        }
+      } else {
+        _showSnackBar('Alamat tidak ditemukan di titik ini');
+      }
+    } catch (e) {
+      _showSnackBar('Gagal mengambil lokasi. Cek koneksi & GPS.');
+      debugPrint('Error detail GPS Utama: $e');
     } finally {
       if (mounted) setState(() => isLoadingAlamat = false);
     }
@@ -208,7 +376,10 @@ class _SettingsScreenState extends State<SettingsScreen> {
           .update(updateData);
 
       if (mounted) {
-        _showSnackBar('✓ Profil berhasil diperbarui');
+        _showSuccessDialog(
+          'Perubahan Disimpan!',
+          'Profil Anda telah berhasil diperbarui.',
+        );
         Future.delayed(const Duration(milliseconds: 800), () {
           if (mounted) {
             setState(() {
@@ -233,22 +404,119 @@ class _SettingsScreenState extends State<SettingsScreen> {
     ).showSnackBar(SnackBar(content: Text(message)));
   }
 
+  void _showSuccessDialog(String title, String message) {
+    if (!mounted) return;
+    showDialog(
+      context: context,
+      barrierDismissible: true,
+      builder: (BuildContext context) {
+        return Dialog(
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(20),
+          ),
+          child: Container(
+            padding: const EdgeInsets.all(32),
+            decoration: BoxDecoration(
+              color: Colors.white,
+              borderRadius: BorderRadius.circular(20),
+            ),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                // Check Icon dengan Animasi
+                TweenAnimationBuilder<double>(
+                  tween: Tween(begin: 0, end: 1),
+                  duration: const Duration(milliseconds: 600),
+                  builder: (context, value, child) {
+                    return Transform.scale(
+                      scale: value,
+                      child: Container(
+                        width: 70,
+                        height: 70,
+                        decoration: BoxDecoration(
+                          shape: BoxShape.circle,
+                          gradient: LinearGradient(
+                            colors: [
+                              const Color(0xFF5E7AC4).withOpacity(0.8),
+                              const Color(0xFF5E7AC4),
+                            ],
+                            begin: Alignment.topLeft,
+                            end: Alignment.bottomRight,
+                          ),
+                          boxShadow: [
+                            BoxShadow(
+                              color: const Color(0xFF5E7AC4).withOpacity(0.3),
+                              blurRadius: 20,
+                              offset: const Offset(0, 8),
+                            ),
+                          ],
+                        ),
+                        child: const Icon(
+                          Icons.check_rounded,
+                          color: Colors.white,
+                          size: 38,
+                        ),
+                      ),
+                    );
+                  },
+                ),
+                const SizedBox(height: 20),
+                // Judul
+                Text(
+                  title,
+                  style: const TextStyle(
+                    fontSize: 20,
+                    fontWeight: FontWeight.w700,
+                    color: Color(0xFF1A1A2E),
+                  ),
+                  textAlign: TextAlign.center,
+                ),
+                const SizedBox(height: 10),
+                // Deskripsi
+                Text(
+                  message,
+                  style: TextStyle(
+                    fontSize: 14,
+                    color: Colors.grey.shade600,
+                    height: 1.5,
+                  ),
+                  textAlign: TextAlign.center,
+                ),
+              ],
+            ),
+          ),
+        );
+      },
+    );
+
+    // Auto-close setelah 1.5 detik
+    Future.delayed(const Duration(milliseconds: 1500), () {
+      if (mounted && Navigator.canPop(context)) {
+        Navigator.pop(context);
+      }
+    });
+  }
+
   @override
   Widget build(BuildContext context) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+
     return Scaffold(
-      backgroundColor: Colors.grey.shade50,
+      backgroundColor: isDark ? const Color(0xFF121212) : Colors.white,
       appBar: AppBar(
-        backgroundColor: Colors.white,
-        elevation: 0.5,
+        elevation: 0,
         leading: GestureDetector(
           onTap: () => Navigator.pop(context),
-          child: const Icon(Icons.arrow_back, color: Colors.black),
+          child: Icon(
+            Icons.arrow_back,
+            color: isDark ? Colors.white : Colors.black,
+          ),
         ),
         automaticallyImplyLeading: false,
-        title: const Text(
+        title: Text(
           'Pengaturan Profil',
           style: TextStyle(
-            color: Colors.black,
+            color: isDark ? Colors.white : Colors.black,
             fontWeight: FontWeight.bold,
             fontSize: 18,
           ),
@@ -275,7 +543,9 @@ class _SettingsScreenState extends State<SettingsScreen> {
                           ),
                           child: CircleAvatar(
                             radius: 60,
-                            backgroundColor: Colors.grey.shade200,
+                            backgroundColor: isDark
+                                ? const Color(0xFF2A2A2A)
+                                : Colors.grey.shade200,
                             backgroundImage: selectedImageBytes != null
                                 ? MemoryImage(selectedImageBytes!)
                                 : null,
@@ -283,7 +553,9 @@ class _SettingsScreenState extends State<SettingsScreen> {
                                 ? Icon(
                                     Icons.person,
                                     size: 60,
-                                    color: Colors.grey.shade400,
+                                    color: isDark
+                                        ? Colors.grey.shade600
+                                        : Colors.grey.shade400,
                                   )
                                 : null,
                           ),
@@ -295,14 +567,18 @@ class _SettingsScreenState extends State<SettingsScreen> {
                             onTap: _pickImage,
                             child: Container(
                               padding: const EdgeInsets.all(8),
-                              decoration: const BoxDecoration(
+                              decoration: BoxDecoration(
                                 shape: BoxShape.circle,
-                                color: Color(0xFF5E7AC4),
+                                color: const Color(0xFF5E7AC4),
+                                border: Border.all(
+                                  color: Colors.white,
+                                  width: 2,
+                                ),
                               ),
                               child: const Icon(
                                 Icons.camera_alt,
-                                color: Colors.white,
                                 size: 20,
+                                color: Colors.white,
                               ),
                             ),
                           ),
@@ -313,7 +589,9 @@ class _SettingsScreenState extends State<SettingsScreen> {
                     Text(
                       'Ubah Foto Profil',
                       style: TextStyle(
-                        color: Colors.grey.shade600,
+                        color: isDark
+                            ? Colors.grey.shade400
+                            : Colors.grey.shade600,
                         fontSize: 12,
                       ),
                     ),
@@ -321,9 +599,13 @@ class _SettingsScreenState extends State<SettingsScreen> {
                 ),
               ),
               const SizedBox(height: 32),
-              const Text(
+              Text(
                 'Informasi Profil',
-                style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+                style: TextStyle(
+                  fontSize: 18,
+                  fontWeight: FontWeight.bold,
+                  color: isDark ? Colors.white : Colors.black,
+                ),
               ),
               const SizedBox(height: 20),
               _buildTextField(
@@ -347,11 +629,13 @@ class _SettingsScreenState extends State<SettingsScreen> {
               Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  const Text(
+                  Text(
                     'Alamat Lengkap',
                     style: TextStyle(
                       fontWeight: FontWeight.w600,
-                      color: Color(0xFF5E7AC4),
+                      color: isDark
+                          ? const Color(0xFF9BAFFF)
+                          : const Color(0xFF5E7AC4),
                       fontSize: 13,
                     ),
                   ),
@@ -365,17 +649,23 @@ class _SettingsScreenState extends State<SettingsScreen> {
                           decoration: InputDecoration(
                             hintText: 'Alamat akan terisi otomatis dari GPS',
                             filled: true,
-                            fillColor: Colors.white,
+                            fillColor: isDark
+                                ? const Color(0xFF2A2A3E)
+                                : Colors.white,
                             border: OutlineInputBorder(
                               borderRadius: BorderRadius.circular(10),
                               borderSide: BorderSide(
-                                color: Colors.grey.shade200,
+                                color: isDark
+                                    ? const Color(0xFF444444)
+                                    : Colors.grey.shade200,
                               ),
                             ),
                             enabledBorder: OutlineInputBorder(
                               borderRadius: BorderRadius.circular(10),
                               borderSide: BorderSide(
-                                color: Colors.grey.shade200,
+                                color: isDark
+                                    ? const Color(0xFF444444)
+                                    : Colors.grey.shade200,
                               ),
                             ),
                             focusedBorder: OutlineInputBorder(
@@ -389,7 +679,14 @@ class _SettingsScreenState extends State<SettingsScreen> {
                               horizontal: 16,
                               vertical: 14,
                             ),
-                            hintStyle: TextStyle(color: Colors.grey.shade400),
+                            hintStyle: TextStyle(
+                              color: isDark
+                                  ? Colors.grey.shade600
+                                  : Colors.grey.shade400,
+                            ),
+                          ),
+                          style: TextStyle(
+                            color: isDark ? Colors.white : Colors.black,
                           ),
                         ),
                       ),
@@ -423,22 +720,140 @@ class _SettingsScreenState extends State<SettingsScreen> {
                   const SizedBox(height: 6),
                   Row(
                     children: [
-                      const Icon(
+                      Icon(
                         Icons.info_outline,
                         size: 13,
-                        color: Colors.black38,
+                        color: isDark ? Colors.grey.shade600 : Colors.black38,
                       ),
                       const SizedBox(width: 4),
                       Text(
                         'Tekan icon GPS untuk mengisi alamat otomatis',
                         style: TextStyle(
                           fontSize: 11,
-                          color: Colors.grey.shade500,
+                          color: isDark
+                              ? Colors.grey.shade600
+                              : Colors.grey.shade500,
                         ),
                       ),
                     ],
                   ),
                 ],
+              ),
+              const SizedBox(height: 16),
+              // Toggle Lacak Lokasi Real-time
+              Container(
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 16,
+                  vertical: 12,
+                ),
+                decoration: BoxDecoration(
+                  color: isDark ? const Color(0xFF1E1E1E) : Colors.white,
+                  borderRadius: BorderRadius.circular(10),
+                  border: Border.all(
+                    color: isDark
+                        ? const Color(0xFF444444)
+                        : Colors.grey.shade200,
+                  ),
+                ),
+                child: Row(
+                  children: [
+                    Icon(
+                      Icons.location_searching,
+                      color: isDark
+                          ? const Color(0xFF9BAFFF)
+                          : const Color(0xFF5E7AC4),
+                      size: 20,
+                    ),
+                    const SizedBox(width: 12),
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            'Lacak Lokasi Real-time',
+                            style: TextStyle(
+                              fontWeight: FontWeight.w600,
+                              fontSize: 13,
+                            ),
+                          ),
+                          Text(
+                            'Perbarui kota/lokasi otomatis saat berpindah tempat',
+                            style: TextStyle(
+                              fontSize: 11,
+                              color: Colors.grey.shade600,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                    Switch(
+                      value: isRealTimeLocationActive,
+                      onChanged: _toggleRealTimeLocation,
+                      activeColor: const Color(0xFF5E7AC4),
+                    ),
+                  ],
+                ),
+              ),
+              const SizedBox(height: 16),
+              // Toggle Dark Mode
+              Container(
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 16,
+                  vertical: 12,
+                ),
+                decoration: BoxDecoration(
+                  color: isDark ? const Color(0xFF1E1E1E) : Colors.white,
+                  borderRadius: BorderRadius.circular(10),
+                  border: Border.all(
+                    color: isDark
+                        ? const Color(0xFF444444)
+                        : Colors.grey.shade200,
+                  ),
+                ),
+                child: Row(
+                  children: [
+                    Icon(
+                      Icons.dark_mode_rounded,
+                      color: isDark
+                          ? const Color(0xFF9BAFFF)
+                          : const Color(0xFF5E7AC4),
+                      size: 20,
+                    ),
+                    const SizedBox(width: 12),
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            'Mode Gelap',
+                            style: TextStyle(
+                              fontWeight: FontWeight.w600,
+                              fontSize: 13,
+                              color: isDark ? Colors.white : Colors.black,
+                            ),
+                          ),
+                          Text(
+                            'Aktifkan tampilan gelap untuk mengurangi kelelahan mata',
+                            style: TextStyle(
+                              fontSize: 11,
+                              color: isDark
+                                  ? Colors.grey.shade500
+                                  : Colors.grey.shade600,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                    Switch(
+                      value: isDarkMode,
+                      onChanged: (value) {
+                        setState(() => isDarkMode = value);
+                        AppTheme.setDarkMode(value);
+                      },
+                      activeColor: const Color(0xFF5E7AC4),
+                    ),
+                  ],
+                ),
               ),
               const SizedBox(height: 32),
               SizedBox(
@@ -514,6 +929,8 @@ class _SettingsScreenState extends State<SettingsScreen> {
     required TextEditingController controller,
     required String hintText,
   }) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -528,17 +945,22 @@ class _SettingsScreenState extends State<SettingsScreen> {
         const SizedBox(height: 8),
         TextField(
           controller: controller,
+          style: TextStyle(color: isDark ? Colors.white : Colors.black),
           decoration: InputDecoration(
             hintText: hintText,
             filled: true,
-            fillColor: Colors.white,
+            fillColor: isDark ? const Color(0xFF2A2A3E) : Colors.white,
             border: OutlineInputBorder(
               borderRadius: BorderRadius.circular(10),
-              borderSide: BorderSide(color: Colors.grey.shade200),
+              borderSide: BorderSide(
+                color: isDark ? const Color(0xFF444444) : Colors.grey.shade200,
+              ),
             ),
             enabledBorder: OutlineInputBorder(
               borderRadius: BorderRadius.circular(10),
-              borderSide: BorderSide(color: Colors.grey.shade200),
+              borderSide: BorderSide(
+                color: isDark ? const Color(0xFF444444) : Colors.grey.shade200,
+              ),
             ),
             focusedBorder: OutlineInputBorder(
               borderRadius: BorderRadius.circular(10),
@@ -548,7 +970,9 @@ class _SettingsScreenState extends State<SettingsScreen> {
               horizontal: 16,
               vertical: 14,
             ),
-            hintStyle: TextStyle(color: Colors.grey.shade400),
+            hintStyle: TextStyle(
+              color: isDark ? Colors.grey.shade600 : Colors.grey.shade400,
+            ),
           ),
         ),
       ],

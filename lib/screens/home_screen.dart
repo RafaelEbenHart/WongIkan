@@ -1,3 +1,5 @@
+import 'dart:convert';
+import 'dart:math' as math;
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
@@ -22,6 +24,10 @@ class HomeScreen extends StatefulWidget {
 class _HomeScreenState extends State<HomeScreen> {
   final TextEditingController searchController = TextEditingController();
   String searchQuery = '';
+  double? userLatitude;
+  double? userLongitude;
+  bool hasFullAddress = false;
+  bool isRealTimeLocationActive = false;
 
   final List<String> kategoriOptions = [
     'Semua',
@@ -35,6 +41,260 @@ class _HomeScreenState extends State<HomeScreen> {
   ];
   String selectedCategory = 'Semua';
 
+  String _formatCurrency(String priceStr) {
+    try {
+      final price = int.parse(priceStr);
+      return price.toString().replaceAllMapped(
+        RegExp(r'(\d)(?=(\d{3})+(?!\d))'),
+        (Match m) => '${m[1]}.',
+      );
+    } catch (e) {
+      return priceStr;
+    }
+  }
+
+  @override
+  void initState() {
+    super.initState();
+    _loadUserAddress();
+    _listenToUserChanges();
+  }
+
+  void _listenToUserChanges() {
+    final user = FirebaseAuth.instance.currentUser;
+    if (user != null) {
+      FirebaseFirestore.instance
+          .collection('users')
+          .doc(user.uid)
+          .snapshots()
+          .listen((doc) {
+            if (doc.exists && mounted) {
+              final data = doc.data();
+              final lat = (data?['latitude'] ?? 0.0) as double?;
+              final lng = (data?['longitude'] ?? 0.0) as double?;
+              final isRealTimeValue = data?['isRealTimeLocation'];
+              final isRealTime = (isRealTimeValue is bool)
+                  ? isRealTimeValue
+                  : false;
+
+              setState(() {
+                userLatitude = (lat != null && lat != 0.0) ? lat : null;
+                userLongitude = (lng != null && lng != 0.0) ? lng : null;
+                hasFullAddress = userLatitude != null && userLongitude != null;
+                isRealTimeLocationActive = isRealTime;
+              });
+            }
+          });
+    }
+  }
+
+  void _loadUserAddress() async {
+    final user = FirebaseAuth.instance.currentUser;
+    if (user != null) {
+      try {
+        final doc = await FirebaseFirestore.instance
+            .collection('users')
+            .doc(user.uid)
+            .get();
+
+        if (doc.exists && mounted) {
+          final data = doc.data();
+          final lat = (data?['latitude'] ?? 0.0) as double?;
+          final lng = (data?['longitude'] ?? 0.0) as double?;
+          final isRealTimeValue = data?['isRealTimeLocation'];
+          final isRealTime = (isRealTimeValue is bool)
+              ? isRealTimeValue
+              : false;
+
+          setState(() {
+            userLatitude = (lat != null && lat != 0.0) ? lat : null;
+            userLongitude = (lng != null && lng != 0.0) ? lng : null;
+            hasFullAddress = userLatitude != null && userLongitude != null;
+            isRealTimeLocationActive = isRealTime;
+          });
+        }
+      } catch (e) {
+        debugPrint('Error loading user address: $e');
+      }
+    }
+  }
+
+  Widget _buildFishCard(QueryDocumentSnapshot doc, double cardWidth) {
+    final ikan = doc.data() as Map<String, dynamic>? ?? {};
+    final lokasiText = ikan['lokasi']?.toString() ?? '-';
+    final harga = ikan['harga']?.toString() ?? '0';
+    final nama = ikan['nama']?.toString() ?? 'Tanpa Nama';
+    final gambarString = ikan['gambar']?.toString() ?? '';
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+
+    return GestureDetector(
+      onTap: () => Navigator.push(
+        context,
+        MaterialPageRoute(builder: (_) => DetailScreen(ikanId: doc.id)),
+      ),
+      child: Container(
+        decoration: BoxDecoration(
+          color: isDark ? const Color(0xFF1E1E1E) : Colors.white,
+          borderRadius: BorderRadius.circular(14),
+          boxShadow: [
+            BoxShadow(
+              color: const Color(0xFF6C8EF5).withOpacity(isDark ? 0.05 : 0.10),
+              blurRadius: 14,
+              offset: const Offset(0, 4),
+            ),
+          ],
+        ),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            ClipRRect(
+              borderRadius: const BorderRadius.only(
+                topLeft: Radius.circular(14),
+                topRight: Radius.circular(14),
+              ),
+              child: SizedBox(
+                width: double.infinity,
+                height: 112,
+                child: gambarString.isNotEmpty
+                    ? Image.memory(
+                        base64Decode(gambarString),
+                        fit: BoxFit.cover,
+                        errorBuilder: (_, __, ___) => _buildPlaceholder(),
+                      )
+                    : _buildPlaceholder(),
+              ),
+            ),
+            Padding(
+              padding: const EdgeInsets.fromLTRB(10, 8, 10, 10),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    nama,
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    style: TextStyle(
+                      fontSize: 13,
+                      fontWeight: FontWeight.w700,
+                      color: isDark ? Colors.white : const Color(0xFF1A1A2E),
+                      letterSpacing: -0.2,
+                    ),
+                  ),
+                  const SizedBox(height: 4),
+                  Row(
+                    children: [
+                      Icon(
+                        Icons.location_on_rounded,
+                        size: 11,
+                        color: isDark
+                            ? const Color(0xFFB0B0B0)
+                            : const Color(0xFF9E9E9E),
+                      ),
+                      const SizedBox(width: 3),
+                      Expanded(
+                        child: Text(
+                          lokasiText,
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                          style: TextStyle(
+                            fontSize: 10,
+                            color: isDark
+                                ? const Color(0xFFB0B0B0)
+                                : const Color(0xFF9E9E9E),
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 6),
+                  Text(
+                    'Rp ${_formatCurrency(harga)}',
+                    style: const TextStyle(
+                      color: Color(0xFF6C8EF5),
+                      fontWeight: FontWeight.w800,
+                      fontSize: 12,
+                      letterSpacing: -0.2,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildPlaceholder() {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    return Container(
+      color: isDark ? const Color(0xFF2A2A3E) : const Color(0xFFEEF3FF),
+      child: Center(
+        child: Icon(
+          Icons.set_meal_rounded,
+          size: 38,
+          color: isDark ? const Color(0xFF9BAFFF) : const Color(0xFF6C8EF5),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildDisarankanGrid(List<QueryDocumentSnapshot> items) {
+    final screenWidth = MediaQuery.of(context).size.width;
+    final cardWidth = (screenWidth - 32 - 10) / 2;
+
+    return Wrap(
+      spacing: 10,
+      runSpacing: 12,
+      children: items.map((doc) {
+        return SizedBox(
+          width: cardWidth,
+          child: _buildFishCard(doc, cardWidth),
+        );
+      }).toList(),
+    );
+  }
+
+  /// Menghitung jarak antara dua koordinat (dalam meter) menggunakan Haversine formula
+  double _calculateDistance(
+    double lat1,
+    double lon1,
+    double lat2,
+    double lon2,
+  ) {
+    const R = 6371000; // Radius bumi dalam meter
+    final dLat = (lat2 - lat1) * math.pi / 180;
+    final dLon = (lon2 - lon1) * math.pi / 180;
+    final a =
+        math.sin(dLat / 2) * math.sin(dLat / 2) +
+        math.cos(lat1 * math.pi / 180) *
+            math.cos(lat2 * math.pi / 180) *
+            math.sin(dLon / 2) *
+            math.sin(dLon / 2);
+    final c = 2 * math.atan2(math.sqrt(a), math.sqrt(1 - a));
+    return R * c; // Hasil dalam meter
+  }
+
+  /// Filter items berdasarkan radius 1km dari user location
+  List<QueryDocumentSnapshot> _filterItemsByRadius(
+    List<QueryDocumentSnapshot> items,
+    double userLat,
+    double userLon,
+    double radiusMeters,
+  ) {
+    return items.where((doc) {
+      final ikan = doc.data() as Map<String, dynamic>;
+      final lat = ikan['latitude'] as double?;
+      final lon = ikan['longitude'] as double?;
+
+      if (lat == null || lon == null) return false;
+
+      final distance = _calculateDistance(userLat, userLon, lat, lon);
+      return distance <= radiusMeters;
+    }).toList();
+  }
+
   @override
   void dispose() {
     searchController.dispose();
@@ -43,17 +303,20 @@ class _HomeScreenState extends State<HomeScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
     return Scaffold(
-      backgroundColor: const Color(0xFFF4F6FF),
+      backgroundColor: isDark
+          ? const Color(0xFF121212)
+          : const Color(0xFFF4F6FF),
       appBar: AppBar(
-        backgroundColor: Colors.transparent,
+        backgroundColor: isDark ? const Color(0xFF1E1E1E) : Colors.transparent,
         elevation: 0,
-        foregroundColor: Colors.black,
+        foregroundColor: isDark ? Colors.white : Colors.black,
         automaticallyImplyLeading: false,
-        title: const Text(
+        title: Text(
           'WONGIWAK',
           style: TextStyle(
-            color: Color(0xFF1A1A2E),
+            color: isDark ? Colors.white : const Color(0xFF1A1A2E),
             fontWeight: FontWeight.w800,
             fontSize: 22,
             letterSpacing: -0.5,
@@ -71,10 +334,14 @@ class _HomeScreenState extends State<HomeScreen> {
               },
               child: CircleAvatar(
                 radius: 19,
-                backgroundColor: const Color(0xFFEEF3FF),
-                child: const Icon(
+                backgroundColor: isDark
+                    ? const Color(0xFF2A2A3E)
+                    : const Color(0xFFEEF3FF),
+                child: Icon(
                   Icons.person_rounded,
-                  color: Color(0xFF6C8EF5),
+                  color: isDark
+                      ? const Color(0xFF9BAFFF)
+                      : const Color(0xFF6C8EF5),
                   size: 20,
                 ),
               ),
@@ -84,6 +351,7 @@ class _HomeScreenState extends State<HomeScreen> {
       ),
       floatingActionButton: FloatingActionButton(
         backgroundColor: const Color(0xFF6C8EF5),
+        foregroundColor: Colors.white,
         elevation: 4,
         onPressed: () {
           if (FirebaseAuth.instance.currentUser == null) {
@@ -125,7 +393,7 @@ class _HomeScreenState extends State<HomeScreen> {
                   vertical: 2,
                 ),
                 decoration: BoxDecoration(
-                  color: Colors.white,
+                  color: isDark ? const Color(0xFF1E1E1E) : Colors.white,
                   borderRadius: BorderRadius.circular(14),
                   boxShadow: [
                     BoxShadow(
@@ -142,23 +410,27 @@ class _HomeScreenState extends State<HomeScreen> {
                       searchQuery = value.toLowerCase();
                     });
                   },
-                  style: const TextStyle(
+                  style: TextStyle(
                     fontSize: 14,
-                    color: Color(0xFF1A1A2E),
+                    color: isDark ? Colors.white : const Color(0xFF1A1A2E),
                   ),
-                  decoration: const InputDecoration(
+                  decoration: InputDecoration(
                     hintText: 'Cari ikan, kategori, atau lokasi...',
                     prefixIcon: Icon(
                       Icons.search_rounded,
-                      color: Color(0xFF9E9E9E),
+                      color: isDark
+                          ? const Color(0xFF9BAFFF)
+                          : const Color(0xFF9E9E9E),
                       size: 20,
                     ),
                     border: InputBorder.none,
                     hintStyle: TextStyle(
-                      color: Color(0xFFBDBDBD),
+                      color: isDark
+                          ? Colors.grey.shade600
+                          : const Color(0xFFBDBDBD),
                       fontSize: 14,
                     ),
-                    contentPadding: EdgeInsets.symmetric(vertical: 14),
+                    contentPadding: const EdgeInsets.symmetric(vertical: 14),
                   ),
                 ),
               ),
@@ -185,7 +457,9 @@ class _HomeScreenState extends State<HomeScreen> {
                         decoration: BoxDecoration(
                           color: active
                               ? const Color(0xFF6C8EF5)
-                              : Colors.white,
+                              : (isDark
+                                    ? const Color(0xFF1E1E1E)
+                                    : Colors.white),
                           borderRadius: BorderRadius.circular(10),
                           boxShadow: active
                               ? [
@@ -201,7 +475,9 @@ class _HomeScreenState extends State<HomeScreen> {
                           border: Border.all(
                             color: active
                                 ? const Color(0xFF6C8EF5)
-                                : Colors.grey.shade200,
+                                : (isDark
+                                      ? Colors.grey.shade700
+                                      : Colors.grey.shade200),
                           ),
                         ),
                         child: Text(
@@ -209,7 +485,9 @@ class _HomeScreenState extends State<HomeScreen> {
                           style: TextStyle(
                             color: active
                                 ? Colors.white
-                                : const Color(0xFF6B6B80),
+                                : (isDark
+                                      ? Colors.grey.shade400
+                                      : const Color(0xFF6B6B80)),
                             fontWeight: active
                                 ? FontWeight.w700
                                 : FontWeight.w500,
@@ -288,6 +566,71 @@ class _HomeScreenState extends State<HomeScreen> {
                       ? filteredData.sublist(4)
                       : <QueryDocumentSnapshot>[];
 
+                  // Filter terdekat berdasarkan radius 1km jika user punya alamat lengkap & toggle aktif
+                  List<QueryDocumentSnapshot> nearbyItems = [];
+                  if (hasFullAddress &&
+                      isRealTimeLocationActive &&
+                      userLatitude != null &&
+                      userLongitude != null) {
+                    nearbyItems = _filterItemsByRadius(
+                      terdekatItems,
+                      userLatitude!,
+                      userLongitude!,
+                      1000, // 1 km dalam meter
+                    );
+                  }
+
+                  // Jika user belum punya alamat lengkap, tampilkan Disarankan dengan grid 2 kolom
+                  if (!hasFullAddress) {
+                    return Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Padding(
+                          padding: const EdgeInsets.only(bottom: 12),
+                          child: Text(
+                            'Disarankan',
+                            style: TextStyle(
+                              fontSize: 17,
+                              fontWeight: FontWeight.w700,
+                              color: isDark
+                                  ? Colors.white
+                                  : const Color(0xFF1A1A2E),
+                              letterSpacing: -0.3,
+                            ),
+                          ),
+                        ),
+                        _buildDisarankanGrid(filteredData),
+                        const SizedBox(height: 80),
+                      ],
+                    );
+                  }
+
+                  // Jika user punya alamat lengkap TAPI toggle real-time OFF, tampilkan grid 2 kolom
+                  if (hasFullAddress && !isRealTimeLocationActive) {
+                    return Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Padding(
+                          padding: const EdgeInsets.only(bottom: 12),
+                          child: Text(
+                            'Disarankan',
+                            style: TextStyle(
+                              fontSize: 17,
+                              fontWeight: FontWeight.w700,
+                              color: isDark
+                                  ? Colors.white
+                                  : const Color(0xFF1A1A2E),
+                              letterSpacing: -0.3,
+                            ),
+                          ),
+                        ),
+                        _buildDisarankanGrid(filteredData),
+                        const SizedBox(height: 80),
+                      ],
+                    );
+                  }
+
+                  // Jika user punya alamat lengkap DAN toggle real-time ON, tampilkan MoreSectionWidget
                   return Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
@@ -376,16 +719,16 @@ class _HomeScreenState extends State<HomeScreen> {
                           },
                         ),
 
-                      if (terdekatItems.isNotEmpty)
+                      if (nearbyItems.isNotEmpty)
                         MoreSectionWidget(
                           title: 'Terdekat',
-                          items: terdekatItems,
+                          items: nearbyItems,
                           detailBuilder: (id) => DetailScreen(ikanId: id),
                           onSeeMore: () => Navigator.push(
                             context,
                             MaterialPageRoute(
                               builder: (_) =>
-                                  TerdekatScreen(items: terdekatItems),
+                                  TerdekatScreen(items: nearbyItems),
                             ),
                           ),
                         ),

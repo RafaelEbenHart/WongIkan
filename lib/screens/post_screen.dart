@@ -1,5 +1,4 @@
 import 'dart:convert';
-import 'dart:typed_data';
 
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
@@ -298,10 +297,30 @@ class _PostScreenState extends State<PostScreen> with WidgetsBindingObserver {
       });
 
       if (!mounted) return;
-      Navigator.pop(context);
-      ScaffoldMessenger.of(
-        context,
-      ).showSnackBar(const SnackBar(content: Text('Posting berhasil')));
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: const Row(
+            children: [
+              Icon(Icons.check_circle, color: Colors.white),
+              SizedBox(width: 12),
+              Text(
+                'Posting berhasil dibuat!',
+                style: TextStyle(fontWeight: FontWeight.w600, fontSize: 14),
+              ),
+            ],
+          ),
+          backgroundColor: Colors.green.shade600,
+          duration: const Duration(seconds: 3),
+          behavior: SnackBarBehavior.floating,
+          margin: const EdgeInsets.all(16),
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(12),
+          ),
+        ),
+      );
+      Future.delayed(const Duration(milliseconds: 500), () {
+        if (mounted) Navigator.pop(context);
+      });
     } catch (e) {
       ScaffoldMessenger.of(
         context,
@@ -312,13 +331,14 @@ class _PostScreenState extends State<PostScreen> with WidgetsBindingObserver {
   }
 
   InputDecoration _inputDecoration({required String hint, String? errorText}) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
     return InputDecoration(
       hintText: hint,
       errorText: errorText,
       filled: true,
       fillColor: errorText != null
           ? Colors.red.shade50
-          : const Color(0xFFF4F6FF),
+          : (isDark ? const Color(0xFF2A2A3E) : const Color(0xFFF4F6FF)),
       contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 18),
       border: OutlineInputBorder(
         borderRadius: BorderRadius.circular(16),
@@ -349,8 +369,11 @@ class _PostScreenState extends State<PostScreen> with WidgetsBindingObserver {
 
   @override
   Widget build(BuildContext context) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+
     if (!widget.isLogin) {
       return Scaffold(
+        backgroundColor: isDark ? const Color(0xFF121212) : Colors.white,
         body: Center(
           child: ElevatedButton(
             onPressed: () {
@@ -366,16 +389,24 @@ class _PostScreenState extends State<PostScreen> with WidgetsBindingObserver {
     }
 
     if (isLoading) {
-      return const Scaffold(body: Center(child: CircularProgressIndicator()));
+      return Scaffold(
+        backgroundColor: isDark ? const Color(0xFF121212) : Colors.white,
+        body: const Center(child: CircularProgressIndicator()),
+      );
     }
 
     return Scaffold(
-      backgroundColor: const Color(0xFFF4F6FF),
+      backgroundColor: isDark
+          ? const Color(0xFF121212)
+          : const Color(0xFFF4F6FF),
       appBar: AppBar(
         elevation: 0,
-        backgroundColor: Colors.white,
-        foregroundColor: Colors.black,
-        title: const Text("Post Ikan"),
+        backgroundColor: isDark ? const Color(0xFF1E1E1E) : Colors.white,
+        foregroundColor: isDark ? Colors.white : Colors.black,
+        title: Text(
+          "Post Ikan",
+          style: TextStyle(color: isDark ? Colors.white : Colors.black),
+        ),
       ),
       body: SingleChildScrollView(
         padding: const EdgeInsets.all(20),
@@ -386,11 +417,13 @@ class _PostScreenState extends State<PostScreen> with WidgetsBindingObserver {
               width: double.infinity,
               padding: const EdgeInsets.all(22),
               decoration: BoxDecoration(
-                color: Colors.white,
+                color: isDark
+                    ? const Color(0xFF1E1E1E)
+                    : Colors.white.withOpacity(0.9),
                 borderRadius: BorderRadius.circular(28),
                 boxShadow: [
                   BoxShadow(
-                    color: Colors.black.withOpacity(0.05),
+                    color: Colors.black.withOpacity(isDark ? 0.3 : 0.05),
                     blurRadius: 20,
                     offset: const Offset(0, 10),
                   ),
@@ -399,14 +432,20 @@ class _PostScreenState extends State<PostScreen> with WidgetsBindingObserver {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  const Text(
+                  Text(
                     'Post Ikan Baru',
-                    style: TextStyle(fontSize: 24, fontWeight: FontWeight.bold),
+                    style: TextStyle(
+                      fontSize: 24,
+                      fontWeight: FontWeight.bold,
+                      color: isDark ? Colors.white : Colors.black,
+                    ),
                   ),
                   const SizedBox(height: 10),
-                  const Text(
+                  Text(
                     'Unggah foto dan isi kategori, nama, harga, dan detail ikan.',
-                    style: TextStyle(color: Colors.black54),
+                    style: TextStyle(
+                      color: isDark ? Colors.white70 : Colors.black54,
+                    ),
                   ),
                   const SizedBox(height: 20),
                   GestureDetector(
@@ -415,9 +454,15 @@ class _PostScreenState extends State<PostScreen> with WidgetsBindingObserver {
                       width: double.infinity,
                       height: 220,
                       decoration: BoxDecoration(
-                        color: const Color(0xFFEEF3FF),
+                        color: isDark
+                            ? const Color(0xFF2A2A3E)
+                            : const Color(0xFFEEF3FF),
                         borderRadius: BorderRadius.circular(20),
-                        border: Border.all(color: const Color(0xFFD7E0FF)),
+                        border: Border.all(
+                          color: isDark
+                              ? const Color(0xFF444444)
+                              : const Color(0xFFD7E0FF),
+                        ),
                       ),
                       child: imageBytes != null
                           ? ClipRRect(
@@ -454,7 +499,9 @@ class _PostScreenState extends State<PostScreen> with WidgetsBindingObserver {
                     value: selectedKategori,
                     decoration: InputDecoration(
                       filled: true,
-                      fillColor: const Color(0xFFF4F6FF),
+                      fillColor: isDark
+                          ? const Color(0xFF2A2A3E)
+                          : const Color(0xFFF4F6FF),
                       contentPadding: const EdgeInsets.symmetric(
                         horizontal: 16,
                         vertical: 18,
@@ -477,11 +524,13 @@ class _PostScreenState extends State<PostScreen> with WidgetsBindingObserver {
               width: double.infinity,
               padding: const EdgeInsets.all(22),
               decoration: BoxDecoration(
-                color: Colors.white,
+                color: isDark
+                    ? const Color(0xFF1E1E1E)
+                    : Colors.white.withOpacity(0.9),
                 borderRadius: BorderRadius.circular(28),
                 boxShadow: [
                   BoxShadow(
-                    color: Colors.black.withOpacity(0.05),
+                    color: Colors.black.withOpacity(isDark ? 0.3 : 0.05),
                     blurRadius: 20,
                     offset: const Offset(0, 10),
                   ),
@@ -490,14 +539,21 @@ class _PostScreenState extends State<PostScreen> with WidgetsBindingObserver {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  const Text(
+                  Text(
                     'Nama Ikan',
-                    style: TextStyle(fontWeight: FontWeight.bold, fontSize: 14),
+                    style: TextStyle(
+                      fontWeight: FontWeight.bold,
+                      fontSize: 14,
+                      color: isDark ? Colors.white : Colors.black,
+                    ),
                   ),
                   const SizedBox(height: 4),
-                  const Text(
+                  Text(
                     'Maks. 200 karakter',
-                    style: TextStyle(color: Colors.black38, fontSize: 11),
+                    style: TextStyle(
+                      color: isDark ? Colors.grey.shade500 : Colors.black38,
+                      fontSize: 11,
+                    ),
                   ),
                   const SizedBox(height: 8),
                   TextField(
@@ -512,14 +568,21 @@ class _PostScreenState extends State<PostScreen> with WidgetsBindingObserver {
                     ).copyWith(counterText: ''),
                   ),
                   const SizedBox(height: 16),
-                  const Text(
+                  Text(
                     'Detail Ikan',
-                    style: TextStyle(fontWeight: FontWeight.bold, fontSize: 14),
+                    style: TextStyle(
+                      fontWeight: FontWeight.bold,
+                      fontSize: 14,
+                      color: isDark ? Colors.white : Colors.black,
+                    ),
                   ),
                   const SizedBox(height: 4),
-                  const Text(
+                  Text(
                     'Maks. 200 karakter',
-                    style: TextStyle(color: Colors.black38, fontSize: 11),
+                    style: TextStyle(
+                      color: isDark ? Colors.grey.shade500 : Colors.black38,
+                      fontSize: 11,
+                    ),
                   ),
                   const SizedBox(height: 8),
                   TextField(
@@ -558,8 +621,12 @@ class _PostScreenState extends State<PostScreen> with WidgetsBindingObserver {
                       ),
                       decoration: BoxDecoration(
                         color: alamat.isEmpty
-                            ? Colors.red.shade50
-                            : const Color(0xFFF4F6FF),
+                            ? (isDark
+                                  ? Colors.red.shade900
+                                  : Colors.red.shade50)
+                            : (isDark
+                                  ? const Color(0xFF2A2A3E)
+                                  : const Color(0xFFF4F6FF)),
                         borderRadius: BorderRadius.circular(16),
                         border: alamat.isEmpty
                             ? Border.all(color: Colors.red.shade200)
@@ -583,7 +650,7 @@ class _PostScreenState extends State<PostScreen> with WidgetsBindingObserver {
                               style: TextStyle(
                                 color: alamat.isEmpty
                                     ? Colors.red.shade700
-                                    : Colors.black87,
+                                    : (isDark ? Colors.white : Colors.black87),
                                 fontSize: 14,
                                 fontWeight: alamat.isEmpty
                                     ? FontWeight.bold
@@ -591,24 +658,33 @@ class _PostScreenState extends State<PostScreen> with WidgetsBindingObserver {
                               ),
                             ),
                           ),
-                          const Icon(
+                          Icon(
                             Icons.arrow_forward_ios,
                             size: 14,
-                            color: Colors.black26,
+                            color: isDark
+                                ? Colors.grey.shade600
+                                : Colors.black26,
                           ),
                         ],
                       ),
                     ),
                   ),
                   const SizedBox(height: 16),
-                  const Text(
+                  Text(
                     'Harga Ikan',
-                    style: TextStyle(fontWeight: FontWeight.bold, fontSize: 14),
+                    style: TextStyle(
+                      fontWeight: FontWeight.bold,
+                      fontSize: 14,
+                      color: isDark ? Colors.white : Colors.black,
+                    ),
                   ),
                   const SizedBox(height: 4),
-                  const Text(
+                  Text(
                     'Maks. Rp 10.000.000 · tidak boleh minus',
-                    style: TextStyle(color: Colors.black38, fontSize: 11),
+                    style: TextStyle(
+                      color: isDark ? Colors.grey.shade500 : Colors.black38,
+                      fontSize: 11,
+                    ),
                   ),
                   const SizedBox(height: 8),
                   Row(
