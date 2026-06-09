@@ -416,10 +416,6 @@ class _ProfileScreenState extends State<ProfileScreen>
     );
   }
 
-  Widget _dividerStat() {
-    return Container(width: 1, height: 30, color: Colors.grey.shade200);
-  }
-
   Widget _statItemStream({
     required String label,
     required Stream<QuerySnapshot> stream,
